@@ -1,7 +1,6 @@
-#' Binning 2d points for count in each bin or calculation with weight assigned.
+#' Binning 2d points
 #'
-#' @description
-#'
+#' @description Binning 2d points for count in each bin or calculation with weight assigned to each point.
 #' @param x,y Coordinates.
 #' @param weight Assign weight to each point. In the same order as coordinates.
 #' @param nbins Number of bins on each axis in the order of c(nbin.x, nbin.y).
@@ -13,7 +12,6 @@
 #' y <- cellCoords[,2]
 #' binlim <- c(min(x),max(x),min(y),max(y))
 #' bin2d(x=x, y=y, nbins=c(100,100), binlim=binlim)
-#' @import
 #' @export
 
 bin2d <- function(x, y, weight=NULL, nbins=c(100,100), binlim, FUN=sum, num.cutoff=NULL){
@@ -56,7 +54,6 @@ bin2d <- function(x, y, weight=NULL, nbins=c(100,100), binlim, FUN=sum, num.cuto
 #' @description
 #' macOS Preview will do some interpolation of the raster to make the plot in pdf smoother/blurry. Adobe is fine.
 #' Raster might have some white line/gap in between.
-#'
 #' @param x,y x, y are vectors for coordinates of z (optional).
 #' @param z A count matrix.
 #' @param method "tile" by default, but can change to "raster".
@@ -96,7 +93,6 @@ plot.mt <- function(x=NULL,y=NULL,z,method="tile"){
 #'
 #' @description
 #' Calculate Wasserstein distance between two wide matrices stored in bins1 and bins2 objects.
-#'
 #' @param bins1,bins2 An object storing multiple tabs of matrices. Raw counts or after smoothing.
 #' @param tab The name of a list in bins object.
 #' @examples
@@ -118,15 +114,12 @@ wdist <- function(bins1, bins2, tab="counts.smooth"){
 #'
 #' @description
 #' Construct an object of class "wpp" from a wide matrix stored in bins object.
-#'
 #' @param bins An object storing multiple tabs of matrices. Raw counts or after smoothing.
 #' @param tab The name of a list in bins object.
 #' @examples
 #' getwpp(bins, tab="counts.smooth")
 #' @import transport
 #' @export
-
-
 
 # transform the matrix to wpp object.
 getwpp <- function(bins, tab){

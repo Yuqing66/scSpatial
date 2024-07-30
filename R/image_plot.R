@@ -1,7 +1,6 @@
 #' Visualize categorical metadata and transcripts in spatial context (centroids).
 #'
-#' @description
-#'
+#' @description Similar to ImageDimPlot in Seurat but allowing highlight of specific categories in group.by.
 #' @param object Seurat object.
 #' @param fov The fov to plot.
 #' @param group.by The name of metadata column to color by.
@@ -29,7 +28,7 @@
 #' ImageDimPlot.ssc(srt, fov = "UV109fov1", group.by = "celltype_res0.1", highlight.by = "lowCount", highlight.groups = "low", highlight.size = 0.5)
 #' ImageDimPlot.ssc(srt, fov = "UV109fov1", group.by = "celltype_res0.1", molecules = c("IFNB1","IL17A"), molecules.size = 0.7)
 #' ImageDimPlot.ssc(srt, fov = "UV109fov1", group.by = "celltype_res0.1", crop = T)
-#' @import ggplot2 dplyr
+#' @import ggplot2 dplyr Seurat
 #' @export
 
 
@@ -146,10 +145,9 @@ ImageDimPlot.ssc <- function(object, fov, group.by=NULL, split.by=NULL, size=0.1
 }
 
 
-#' Create a transition animation between different cell coordinate plots, e.g. fov, umap, pca
+#' Transition animation between plots of cells
 #'
-#' @description
-#'
+#' @description Create a transition animation between different cell coordinate plots, e.g. fov, umap, pca
 #' @param object Seurat object.
 #' @param initial Name of cell coordinates to start with. Embedding name in srt@reductions, or "images" for spatial slide.
 #' @param final Name of cell coordinates to transition into.
@@ -305,7 +303,6 @@ plotTransition <- function(srt, initial="umap", final="images", group.by=NULL,
 #' ggsave(paste0("transition_animation_umap_to_images_start.png"), width = 16, height = 8)
 #' g.list[[2]]
 #' ggsave(paste0("transition_animation_umap_to_images_end.png"), width = 16, height = 8)
-
 #' @import ggplot2 dplyr gganimate
 #' @export
 

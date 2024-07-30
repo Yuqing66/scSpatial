@@ -10,7 +10,6 @@
 #' @examples
 #' coords <- getCoords(srt, name = "umap", fov=NULL, metadata=c("CellType"))
 #' coords <- getCoords(srt, name = "images", fov=c("fov1","fov2"), metadata=c("CellType"))
-#' @import
 #' @export
 
 #

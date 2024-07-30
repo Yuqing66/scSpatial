@@ -66,7 +66,7 @@ ImageDimPlot.ssc(
 \item{dark.backgrount}{Black backgrount. By default TRUE.}
 }
 \description{
-Visualize categorical metadata and transcripts in spatial context (centroids).
+Similar to ImageDimPlot in Seurat but allowing highlight of specific categories in group.by.
 }
 \examples{
 ImageDimPlot.ssc(srt, fov = "UV109fov1", group.by = "celltype_res0.1")

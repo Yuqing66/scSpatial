@@ -2,7 +2,7 @@
 % Please edit documentation in R/image_plot.R
 \name{plotTransition}
 \alias{plotTransition}
-\title{Create a transition animation between different cell coordinate plots, e.g. fov, umap, pca}
+\title{Transition animation between plots of cells}
 \usage{
 plotTransition(
   srt,

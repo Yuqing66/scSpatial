@@ -2,7 +2,7 @@
 % Please edit documentation in R/colocalization.R
 \name{bin2d}
 \alias{bin2d}
-\title{Binning 2d points for count in each bin or calculation with weight assigned.}
+\title{Binning 2d points}
 \usage{
 bin2d(
   x,
@@ -28,7 +28,7 @@ bin2d(
 \item{num.cutoff}{Remove bins with less than this number of points.}
 }
 \description{
-Binning 2d points for count in each bin or calculation with weight assigned.
+Binning 2d points for count in each bin or calculation with weight assigned to each point.
 }
 \examples{
 x <- cellCoords[,1]
