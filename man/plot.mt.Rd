@@ -4,19 +4,30 @@
 \alias{plot.mt}
 \title{Plot 2d raster density plot}
 \usage{
-\method{plot}{mt}(x = NULL, y = NULL, z, method = "tile")
+\method{plot}{mt}(x = NULL, y = NULL, z, flip = F)
+
+\method{plot}{mt}(x = NULL, y = NULL, z, flip = F)
 }
 \arguments{
-\item{x, y}{x, y are vectors for coordinates of z (optional).}
+\item{x, y}{Optional. Vectors for coordinates of z;}
 
-\item{z}{A count matrix.}
+\item{z}{is a count matrix.}
+
+\item{flip}{Flip the plot to match seurat plot.}
 
 \item{method}{"tile" by default, but can change to "raster".}
+
+\item{object}{Seurat object.}
 }
 \description{
 macOS Preview will do some interpolation of the raster to make the plot in pdf smoother/blurry. Adobe is fine.
 Raster might have some white line/gap in between.
+
+Plot 2d raster plot with data.frame in wide format.
 }
 \examples{
 plot.mt(wideMatrix)
+binlim.srt <- getSize(srt, image.name = "UV109fov1")
+df.wide <- plotField(field, nbins = 100, binlim = binlim.srt, shape = "wide")
+plot.mt(z=df.wide)
 }
