@@ -442,7 +442,7 @@ getSize <- function(object, image.name){
 #' df.long <- plotField(field, nbins = 100, binlim = binlim.srt, shape = "long")
 #' colnames(df.long) <- c("x","y","z")
 #' plot.mt.long(df.long)
-#' @import tidyverse
+#' @import magrittr tibble dplyr tidyr
 #' @export
 #'
 
