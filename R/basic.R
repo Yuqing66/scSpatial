@@ -37,3 +37,43 @@ getCoords <- function(srt, name, fov=NULL, metadata=NULL){
   }
   return(coords)
 }
+
+
+
+#' @title Add optional columns to a data frame.
+#' @description
+#' Add optional columns to a data frame if not NULL.
+#' @param df A data frame.
+#' @param ... Vectors to add to the data frame. Format column_name=vector. Use vector name if column_name is not provided.
+#' @return A data frame with optional columns added.
+#' @examples
+#' m1 <- data.frame(a=1:5, b=letters[1:5])
+#' c <- 2:6
+#' m2 <- addOptionalCols(df=m1, c, d=3:7)
+#' @export
+
+
+addOptionalCols <- function(df, ...){
+  dots <- list(...)
+  mc <- match.call(expand.dots = FALSE)[["..."]]
+
+  for (i in 1:length(dots)){
+    c <- dots[[i]]
+    if (!is.null(c)){
+      colname <- names(dots)[i]
+      if (is.null(colname) || colname=="") colname <- deparse(mc[[i]])
+
+      if (colname %in% colnames(df)){
+        message(paste0(colname," already exists in the data frame."))
+        next
+      }
+      if (length(c) != nrow(df)){
+        stop(paste0("The length of ",colname," is not equal to the number of rows in the data frame."))
+      }
+      df[colname] <- c
+    }
+  }
+  return(df)
+}
+
+

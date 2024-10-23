@@ -3,11 +3,11 @@
 #' @description Similar to ImageDimPlot in Seurat but allowing highlight of specific categories in group.by.
 #' @param object Seurat object.
 #' @param fov The fov to plot.
-#' @param group.by The name of metadata column to color by.
-#' @param split.by The name of metadata column to split the plot by.
-#' @param size Point size for cells when plotting centroids.
+#' @param group.by Column name in the metadata to group color the cells
+#' @param split.by Column name in the metadata to split the cells
+#' @param size Size of the cells.
 #' @param cols A named vector with group categories as names and colors as values.
-#' @param alpha Point transparency.
+#' @param alpha Transparency of the cells.
 #' @param highlight.by The name of metadata column containing the highlight category labels. Same as group.by by default.
 #' @param highlight.groups A vector specifying categories to highlight.
 #' @param highlight.size Point size for highlighted cells.
@@ -19,7 +19,7 @@
 #' @param molecules.alpha Transparency of molecules to plot.
 #' @param dark.backgrount Black backgrount. By default TRUE.
 #' @param crop If TRUE, crop off the region with no cells or molecules to plot. Or a vector with four numbers specifying c(min.x, max.x, min.y, max.y)
-#' @param flip_xy To match the Seurat output, the x and y axises are by default flipped.
+#' @param flip To match the Seurat output, the x and y axises are by default flipped.
 #' @examples
 #' ImageDimPlot.ssc(srt, fov = "UV109fov1", group.by = "celltype_res0.1")
 #' ImageDimPlot.ssc(srt, fov = "UV109fov1", group.by = "celltype_res0.1", split.by = "Disease")
@@ -35,7 +35,7 @@
 ImageDimPlot.ssc <- function(object, fov, group.by=NULL, split.by=NULL, size=0.1, cols=NULL, alpha=1,
                              highlight.by=NULL, highlight.groups=NULL, highlight.size=0.2, highlight.cols=NULL, highlight.alpha=1,
                              molecules=NULL, molecules.size=0.1, molecules.cols=NULL, molecules.alpha=1,
-                             dark.background=T, crop=NULL, flip_xy=F){
+                             dark.background=T, crop=NULL, flip=F){
   # get coordinates and metadata
   df <- data.frame(x=object@images[[fov]]$centroids@coords[,1],
                    y=object@images[[fov]]$centroids@coords[,2])
@@ -138,7 +138,7 @@ ImageDimPlot.ssc <- function(object, fov, group.by=NULL, split.by=NULL, size=0.1
   if (dark.background){
     g <- g + theme(panel.background = element_rect(fill = 'black', color = 'black'))
   }
-  if (flip_xy){
+  if (flip){
     g <- g + coord_flip()
   }
   return(g)

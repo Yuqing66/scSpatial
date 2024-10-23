@@ -4,7 +4,7 @@
 \alias{getCoords.cell}
 \title{Get the coordinates of cells in a Seurat object}
 \usage{
-getCoords.cell(object, image.name)
+getCoords.cell(object, image.name, meta.cols = NULL)
 }
 \arguments{
 \item{object}{Seurat object. Need to subset srt before applying this function.}

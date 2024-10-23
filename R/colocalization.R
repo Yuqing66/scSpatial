@@ -47,49 +47,6 @@ bin2d <- function(x, y, weight=NULL, nbins=c(100,100), binlim, FUN=sum, num.cuto
 
 
 
-
-
-
-#' @title Plot 2d raster density plot
-#'
-#' @description
-#' macOS Preview will do some interpolation of the raster to make the plot in pdf smoother/blurry. Adobe is fine.
-#' Raster might have some white line/gap in between.
-#' @param x,y x, y are vectors for coordinates of z (optional).
-#' @param z A count matrix.
-#' @param method "tile" by default, but can change to "raster".
-#' @examples
-#' plot.mt(wideMatrix)
-#' @import ggplot2
-#' @export
-
-plot.mt <- function(x=NULL,y=NULL,z,method="tile"){
-  wide <- data.frame(z)
-  if (is.null(x)) x <- 1:ncol(z)
-  if (is.null(y)) y <- 1:nrow(z)
-  colnames(wide) <- x
-  wide$y <- y
-  long <- melt(wide, id.vars = c("y"),
-               variable.name = "x",
-               value.name = "z")
-  long$x <- as.numeric(as.vector(long$x)) # factor to numeric
-  if (method == "tile"){
-    g <- ggplot(long,aes(x=x,y=y))+
-      geom_tile(aes(fill=z,color=z),size=0)
-    # color and size are used to remove the white lines between tiles
-  }else if (method == "raster"){
-    g <- ggplot(long,aes(x=x,y=y))+
-      geom_raster(aes(fill=z,color=z))
-  }
-  g <- g + theme(axis.title = element_blank(),axis.text = element_blank(),
-                 axis.ticks = element_blank(),legend.title = element_blank())
-  return(g)
-}
-
-
-
-
-
 #' @title Calculate Wasserstein distance
 #'
 #' @description
@@ -221,8 +178,13 @@ findDistance.euclidean <- function(value, sd){
 #' @export
 #'
 
-getCoords.cell <- function(object, image.name){
+getCoords.cell <- function(object, image.name, meta.cols=NULL){
   coords <- as.data.frame(object@images[[image.name]]@boundaries$centroids@coords)
+  rownames(coords) <- object@images[[image.name]]@boundaries$centroids@cells
+  if (!is.null(meta.cols)){
+    meta.df <- object@meta.data[match(rownames(coords), colnames(object)), meta.cols, drop=FALSE]
+    coords <- cbind(coords, meta.df)
+  }
   return(coords)
 }
 
@@ -422,214 +384,6 @@ getSize <- function(object, image.name){
   res <- c(x.min-1,x.max+1,y.min-1,y.max+1)
   return(res)
 }
-
-
-
-
-#' @title Get df to plot the field
-#'
-#' @description
-#' Calculate the value of the field over the 2d space. The result can be in long or wide format for downstream plotting.
-#'
-#' @param field A field object created by createField.
-#' @param nbins Number of bins on each axis. If only one number, the same number is used for both x and y.
-#' @param binlim x, y range for bin calculation, e.g. c(min(x),max(x),min(y),max(y)).
-#' @param shape "long" by default, but can change to "wide".
-#' @examples
-#' binlim.srt <- getSize(srt, image.name = "UV109fov1")
-#' df.wide <- plotField(field, nbins = 100, binlim = binlim.srt, shape = "wide")
-#' plot.mt(z=df.wide)
-#' df.long <- plotField(field, nbins = 100, binlim = binlim.srt, shape = "long")
-#' colnames(df.long) <- c("x","y","z")
-#' plot.mt.long(df.long)
-#' @import magrittr tibble dplyr tidyr
-#' @export
-#'
-
-
-plotField <- function(field, nbins, binlim, shape="long"){
-  ndim <- ncol(field$coords)
-  if (length(nbins) == 1){
-    nbins <- rep(nbins, ndim)
-  }
-  x.cuts <- seq(from = binlim[1], to = binlim[2], length = nbins[1] + 1)
-  y.cuts <- seq(from = binlim[3], to = binlim[4], length = nbins[2] + 1)
-  coords.plot <- expand.grid(x.cuts, y.cuts)
-
-  values <- getValueInField(field, coords=coords.plot)
-  coords.plot$value <- values
-  if (shape=="wide"){
-    res <- coords.plot %>% pivot_wider(names_from = "Var1", values_from = "value") %>% column_to_rownames("Var2")
-  }else{
-    res <- coords.plot
-  }
-  return(res)
-}
-
-
-
-
-
-#' @title Plot 2d raster plot
-#'
-#' @description
-#' Plot 2d raster plot with data.frame in wide format.
-#'
-#' @param x,y Optional. Vectors for coordinates of z;
-#' @param z is a count matrix.
-#' @param flip Flip the plot to match seurat plot.
-#' @param object Seurat object.
-#' @examples
-#' binlim.srt <- getSize(srt, image.name = "UV109fov1")
-#' df.wide <- plotField(field, nbins = 100, binlim = binlim.srt, shape = "wide")
-#' plot.mt(z=df.wide)
-#' @import ggplot2 reshape2
-#' @export
-#'
-
-plot.mt <- function(x=NULL,y=NULL,z,flip=F){
-  wide <- data.frame(z)
-  if (is.null(x)) x <- 1:ncol(z)
-  if (is.null(y)) y <- 1:nrow(z)
-  colnames(wide) <- x
-  wide$y <- y
-  long <- melt(wide, id.vars = c("y"),
-               variable.name = "x",
-               value.name = "z")
-  long$x <- as.numeric(as.vector(long$x)) # factor to numeric
-  g <- ggplot(long,aes(x=x,y=y))+
-    geom_tile(aes(fill=z,color=z),linewidth=0)+
-    # color and size are used to remove the white lines between tiles
-    theme(axis.title = element_blank(),axis.text = element_blank(),
-          axis.ticks = element_blank(),legend.title = element_blank())
-  if (flip){
-    g <- g + coord_flip()
-  }
-  return(g)
-}
-
-
-
-#' @title Plot 2d raster plot
-#'
-#' @description
-#' Plot 2d raster plot with data.frame in long format
-#'
-#' @param df A data.frame with columns x, y, z for coordinates x,y and value z.
-#' @param flip Flip the plot to match seurat plot.
-#' @examples
-#' colnames(df.long) <- c("x","y","z")
-#' plot.mt.long(df.long)
-#' @import ggplot2
-#' @export
-#'
-
-plot.mt.long <- function(df, flip=F){
-  g <- ggplot(df,aes(x=x,y=y))+
-    geom_tile(aes(fill=z,color=z),linewidth=0.5)+
-    # color and size are used to remove the white lines between tiles
-    theme(axis.title = element_blank(),axis.text = element_blank(),
-          axis.ticks = element_blank(),legend.title = element_blank())
-  if (flip){
-    g <- g + coord_flip()
-  }
-  return(g)
-}
-
-
-
-
-
-#' @title Plot the 3d contour plot
-#'
-#' @description
-#' Plot the 3d contour plot.
-#'
-#' @param df A data.frame with columns x, y for coordinates z for values. Or a wide matrix with values.
-#' @param flip Flip the plot to match seurat plot.
-#' @param shape "long" by default, but can change to "wide".
-#' @examples
-#' g <- plotContour(df.long, shape = "long")
-#' htmlwidgets::saveWidget(rglwidget(), "field_IFNB1_nbins100_contour.html")
-#' browseURL("field_IFNB1_nbins100_contour.html")
-#' @import rgl
-#' @export
-#'
-
-
-plotContour <- function(df, flip=T, shape="long"){
-  if (shape == "long"){
-    df <- df %>% pivot_wider(names_from = "x", values_from = "z") %>% column_to_rownames("y")
-  }
-  if (flip){
-    x=as.numeric(rownames(df))
-    y=as.numeric(colnames(df))
-  }else{
-    x=as.numeric(colnames(df))
-    y=as.numeric(rownames(df))
-  }
-  g <- persp3d(x=x,y=y,z=as.matrix(df), contour=T, col=terrain.colors(5))
-  return(g)
-}
-
-
-
-
-
-
-#' @title ImageDimPlot color by provided values.
-#'
-#' @description
-#' Plot points on a 2d space color by values. If Seurat object is provided, plot the location of the cells beneath.
-#'
-#' @param coords A data.frame with columns x, y.
-#' @param values A vector of values for coloring.
-#' @param alpha Transparency of the points.
-#' @param size Size of the points.
-#' @param flip Flip the plot to match seurat plot.
-#' @param color Color of the points.
-#' @param object Seurat object.
-#' @examples
-#' ind.moDC <- srt$subcelltype == "monocyte"
-#' coords.moDC <- getCoords.cell(srt, ind = ind.moDC, image.name = "roi1")
-#' values <- getValueInField(field, coords.moDC)
-#' ImageDimPlot.values(coords=coords.moDC, values, image.name="roi1", srt=srt)
-#'
-#' @import Seurat
-#' @export
-#'
-
-
-ImageDimPlot.values <- function(coords, values, alpha = 1, size = 0.8, flip=F,
-                                color=c("grey","purple","red","orange","yellow"),
-                                srt=NULL, image.name=NULL, alpha.srt=0.1, size.srt=0.1, color.srt="lightblue",dark.background=T){
-  g <- ggplot()
-  if(!is.null(srt)){
-    df <- data.frame(x=srt@images[[image.name]]$centroids@coords[,1],
-                     y=srt@images[[image.name]]$centroids@coords[,2])
-    g <- g + geom_point(data = df, mapping = aes(x=x,y=y), alpha=alpha.srt, size=size.srt, color=color.srt)
-  }
-  coords$value <- values
-  g <- g + geom_point(data = coords, mapping = aes(x=x,y=y,col=value), alpha = alpha, size = size) +
-    theme(axis.title = element_blank())  + theme(panel.grid = element_blank()) + theme_classic()
-
-  if (!is.null(color)){
-    g <- g + scale_color_gradientn(colors = color)
-  }
-  if (dark.background){
-    g <- g + theme(panel.background = element_rect(fill = 'black', color = 'black'))
-  }
-
-  if (flip){
-    g <- g + coord_flip()
-  }
-  return(g)
-}
-
-
-
-
-
 
 
 
