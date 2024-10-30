@@ -21,8 +21,8 @@ Calculate the value of the field over the 2d space. The result can be in long or
 \examples{
 binlim.srt <- getSize(srt, fov = "UV109fov1")
 df.wide <- plotField(field, nbins = 100, binlim = binlim.srt, shape = "wide")
-plot.mt(z=df.wide)
+plotMt(z=df.wide)
 df.long <- plotField(field, nbins = 100, binlim = binlim.srt, shape = "long")
 colnames(df.long) <- c("x","y","z")
-plot.mt.long(df.long)
+plotMt.long(df.long)
 }

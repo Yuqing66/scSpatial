@@ -12,10 +12,10 @@
 #' @examples
 #' binlim.srt <- getSize(srt, fov = "UV109fov1")
 #' df.wide <- plotField(field, nbins = 100, binlim = binlim.srt, shape = "wide")
-#' plot.mt(z=df.wide)
+#' plotMt(z=df.wide)
 #' df.long <- plotField(field, nbins = 100, binlim = binlim.srt, shape = "long")
 #' colnames(df.long) <- c("x","y","z")
-#' plot.mt.long(df.long)
+#' plotMt.long(df.long)
 #' @import magrittr tibble dplyr tidyr
 #' @export
 #'
@@ -57,12 +57,12 @@ plotField <- function(field, nbins, binlim, shape="long"){
 #' @examples
 #' binlim.srt <- getSize(srt, fov = "UV109fov1")
 #' df.wide <- plotField(field, nbins = 100, binlim = binlim.srt, shape = "wide")
-#' plot.mt(z=df.wide)
+#' plotMt(z=df.wide)
 #' @import ggplot2 reshape2
 #' @export
 #'
 
-plot.mt <- function(x=NULL,y=NULL,z,flip=F,method="tile"){
+plotMt <- function(x=NULL,y=NULL,z,flip=F,method="tile"){
   wide <- data.frame(z)
   if (is.null(x)) x <- 1:ncol(z)
   if (is.null(y)) y <- 1:nrow(z)
@@ -101,12 +101,12 @@ plot.mt <- function(x=NULL,y=NULL,z,flip=F,method="tile"){
 #' @param flip Flip the plot to match seurat plot.
 #' @examples
 #' colnames(df.long) <- c("x","y","z")
-#' plot.mt.long(df.long)
+#' plotMt.long(df.long)
 #' @import ggplot2
 #' @export
 #'
 
-plot.mt.long <- function(df, flip=F){
+plotMt.long <- function(df, flip=F){
   g <- ggplot(df,aes(x=x,y=y))+
     geom_tile(aes(fill=z,color=z),linewidth=0.5)+
     # color and size are used to remove the white lines between tiles

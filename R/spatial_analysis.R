@@ -119,12 +119,12 @@ calcDistance.toLine <- function(x, y, coords.df=NULL, p1=NULL, p2=NULL, k=NULL, 
 #' @examples
 #' g <- ImageDimPlot.ssc(srt, fov = fov, group.by = NULL)
 #' coords <- getClickCoordinates(g)
-#' d <- image.calcDistanceTo(srt, fov = fov, coords.df = coords)
+#' d <- image_calcDistanceTo(srt, fov = fov, coords.df = coords)
 #' @import Seurat
 #' @export
 
 
-image.calcDistanceTo <- function(object, fov, shape = "line", ...){
+image_calcDistanceTo <- function(object, fov, shape = "line", ...){
   dots <- list(...)
   mc <- match.call(expand.dots = FALSE)[["..."]]
 
@@ -136,6 +136,7 @@ image.calcDistanceTo <- function(object, fov, shape = "line", ...){
   }else{
     stop("Only line is supported for now.")
   }
+  names(d) <- rownames(cell.coords)
   return(d)
 }
 
