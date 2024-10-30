@@ -12,7 +12,7 @@ ImageDimPlot.values(
   flip = F,
   color = c("grey", "purple", "red", "orange", "yellow"),
   srt = NULL,
-  image.name = NULL,
+  fov = NULL,
   alpha.srt = 0.1,
   size.srt = 0.1,
   color.srt = "lightblue",
@@ -39,8 +39,7 @@ Plot points on a 2d space color by values. If Seurat object is provided, plot th
 }
 \examples{
 ind.moDC <- srt$subcelltype == "monocyte"
-coords.moDC <- getCoords.cell(srt, ind = ind.moDC, image.name = "roi1")
+coords.moDC <- getCoords.cell(srt, ind = ind.moDC, fov = "roi1")
 values <- getValueInField(field, coords.moDC)
-ImageDimPlot.values(coords=coords.moDC, values, image.name="roi1", srt=srt)
-
+ImageDimPlot.values(coords=coords.moDC, values, fov="roi1", srt=srt)
 }

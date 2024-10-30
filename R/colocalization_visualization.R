@@ -10,7 +10,7 @@
 #' @param binlim x, y range for bin calculation, e.g. c(min(x),max(x),min(y),max(y)).
 #' @param shape "long" by default, but can change to "wide".
 #' @examples
-#' binlim.srt <- getSize(srt, image.name = "UV109fov1")
+#' binlim.srt <- getSize(srt, fov = "UV109fov1")
 #' df.wide <- plotField(field, nbins = 100, binlim = binlim.srt, shape = "wide")
 #' plot.mt(z=df.wide)
 #' df.long <- plotField(field, nbins = 100, binlim = binlim.srt, shape = "long")
@@ -55,7 +55,7 @@ plotField <- function(field, nbins, binlim, shape="long"){
 #' @param flip Flip the plot to match seurat plot.
 #' @param method "tile" by default, but can change to "raster".
 #' @examples
-#' binlim.srt <- getSize(srt, image.name = "UV109fov1")
+#' binlim.srt <- getSize(srt, fov = "UV109fov1")
 #' df.wide <- plotField(field, nbins = 100, binlim = binlim.srt, shape = "wide")
 #' plot.mt(z=df.wide)
 #' @import ggplot2 reshape2
@@ -160,10 +160,8 @@ plotContour <- function(df, flip=T, shape="long"){
 
 
 #' @title ImageDimPlot color by provided values.
-#'
 #' @description
 #' Plot points on a 2d space color by values. If Seurat object is provided, plot the location of the cells beneath.
-#'
 #' @param coords A data.frame with columns x, y.
 #' @param values A vector of values for coloring.
 #' @param alpha Transparency of the points.
@@ -173,10 +171,9 @@ plotContour <- function(df, flip=T, shape="long"){
 #' @param object Seurat object.
 #' @examples
 #' ind.moDC <- srt$subcelltype == "monocyte"
-#' coords.moDC <- getCoords.cell(srt, ind = ind.moDC, image.name = "roi1")
+#' coords.moDC <- getCoords.cell(srt, ind = ind.moDC, fov = "roi1")
 #' values <- getValueInField(field, coords.moDC)
-#' ImageDimPlot.values(coords=coords.moDC, values, image.name="roi1", srt=srt)
-#'
+#' ImageDimPlot.values(coords=coords.moDC, values, fov="roi1", srt=srt)
 #' @import Seurat
 #' @export
 #'
@@ -184,11 +181,11 @@ plotContour <- function(df, flip=T, shape="long"){
 
 ImageDimPlot.values <- function(coords, values, alpha = 1, size = 0.8, flip=F,
                                 color=c("grey","purple","red","orange","yellow"),
-                                srt=NULL, image.name=NULL, alpha.srt=0.1, size.srt=0.1, color.srt="lightblue",dark.background=T){
+                                srt=NULL, fov=NULL, alpha.srt=0.1, size.srt=0.1, color.srt="lightblue",dark.background=T){
   g <- ggplot()
   if(!is.null(srt)){
-    df <- data.frame(x=srt@images[[image.name]]$centroids@coords[,1],
-                     y=srt@images[[image.name]]$centroids@coords[,2])
+    df <- data.frame(x=srt@images[[fov]]$centroids@coords[,1],
+                     y=srt@images[[fov]]$centroids@coords[,2])
     g <- g + geom_point(data = df, mapping = aes(x=x,y=y), alpha=alpha.srt, size=size.srt, color=color.srt)
   }
   coords$value <- values
@@ -249,11 +246,11 @@ ImageDimPlot.sizeGuide <- function(object, fov, group.by=NULL, size = 0.2, cols 
                        shape.col = "lightblue", shape.alpha = 0.8,
                        label = T, label.col = "red", label.size = 3, label.gap = NULL,
                        dark.background = T, flip = F){
-  df <- getCoords.cell(object, image.name = fov, meta.cols = group.by)
+  df <- getCoords.cell(object, fov = fov, meta.cols = group.by)
   if (flip){
     colnames(df) <- c("y","x",group.by)
   }
-  binlim <- getSize(object, image.name = fov)
+  binlim <- getSize(object, fov = fov)
 
   if (is.null(gap)){
     gap <- min(radii)
@@ -407,9 +404,17 @@ FeaturePlot.cont.rollmean <- function(object, gene, continuous, group.by=NULL, s
   }
   df <- data.frame(x=object@meta.data[,continuous],
                    gene=object@assays[[assay]]$data[rownames(object) == gene,])
-  if (!is.null(group.by)) group <- object@meta.data[,group.by]
-  if (!is.null(split.by)) split <- object@meta.data[,split.by]
-  g <- rollMeanPlot(x=df$x, y=df$gene, group=group,split=split,
+  if (!is.null(group.by)){
+    group.vec <- object@meta.data[,group.by]
+  }else{
+    group.vec <- NULL
+  }
+  if (!is.null(split.by)){
+    split.vec <- object@meta.data[,split.by]
+  }else{
+    split.vec <- NULL
+  }
+  g <- rollMeanPlot(x=df$x, y=df$gene, group.vec=group.vec,split.vec=split.vec,
                     window.prop=window.prop, window.n=window.n, trans=trans)
   if (!is.null(cols)) {
     g <- g + scale_color_manual(values = cols)
@@ -439,12 +444,12 @@ FeaturePlot.cont.rollmean <- function(object, gene, continuous, group.by=NULL, s
 #' @import ggplot2 zoo magrittr dplyr
 #' @export
 
-rollMeanPlot <- function(x, y, group=NULL, split=NULL, window.prop=0.05, window.n=NULL, trans=NULL){
+rollMeanPlot <- function(x, y, group.vec=NULL, split.vec=NULL, window.prop=0.05, window.n=NULL, trans=NULL){
   df <- data.frame(x=x, y=y)
 
-  if (!is.null(group) || !is.null(split)){
-    df <- addOptionalCols(df, group, split)
-    df$tmp <- paste(df$group, df$split, sep="_")
+  if (!is.null(group.vec) || !is.null(split.vec)){
+    df <- addOptionalCols(df, group.vec, split.vec)
+    df$tmp <- paste(df$group.vec, df$split.vec, sep="_")
 
     slices <- unique(df$tmp)
     df$rollingavg <- NA
@@ -457,14 +462,14 @@ rollMeanPlot <- function(x, y, group=NULL, split=NULL, window.prop=0.05, window.
   }
 
   g <- ggplot(df) +
-    geom_line(aes(x = x, y = rollingavg, col = group), size = 1)
+    geom_line(aes(x = x, y = rollingavg, col = group.vec), size = 1)
 
   if (!is.null(trans)){
     g <- g + scale_x_continuous(transform = trans)
   }
 
-  if (!is.null(split)){
-    g <- g + facet_wrap(~split, scales = "free_y")
+  if (!is.null(split.vec)){
+    g <- g + facet_wrap(~split.vec, scales = "free_y")
   }
 
   return(g)
@@ -489,6 +494,10 @@ rollMeanPlot <- function(x, y, group=NULL, split=NULL, window.prop=0.05, window.
 rollMean <- function(x, y, window.prop=0.05, window.n=NULL){
   if(is.null(window.n)){
     window.n <- floor(length(x)*window.prop)
+    if (window.n < 2){
+      rollingavg <- rep(NA, length(x))
+      return(rollingavg)
+    }
   }
   padding <- rep(NA, window.n - 1)
   df <- data.frame(x=x, y=y)

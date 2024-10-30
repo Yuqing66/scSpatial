@@ -429,10 +429,30 @@ plotTransition.terminal <- function(srt, initial="umap", final="images", group.b
 
 
 
+#' Plot the path on top of a image plot.
+#' @param ggplot.object A ggplot object.
+#' @param path.coords A data frame with x and y coordinates of the path.
+#' @param ends.close If TRUE, close the path by connecting the last point to the first point.
+#' @param path.col Color of the path.
+#' @param path.size Size of the path.
+#' @param path.alpha Transparency of the path.
+#' @return A ggplot object with the path added.
+#' @examples
+#' g <- ImageDimPlot.ssc(srt, fov = fov, group.by = NULL)
+#' coords <- getClickCoordinates(g)
+#' ImageDimPlot.path(g, path.coords = coords)
+#' @import ggplot2
+#' @export
 
 
-
-
+ImageDimPlot.path <- function(ggplot.object, path.coords, ends.close = F,
+                              path.col = "red", path.size = 0.5, path.alpha = 1){
+  if (ends.close){
+    path.coords <- rbind(path.coords, path.coords[1,])
+  }
+  g <- ggplot.object + geom_path(data = path.coords, aes(x=x,y=y), color = path.col, size = path.size, alpha = path.alpha)
+  return(g)
+}
 
 
 

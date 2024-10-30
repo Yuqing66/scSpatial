@@ -162,87 +162,6 @@ findDistance.euclidean <- function(value, sd){
 
 
 
-#### get the coordinates (and values) ####
-
-#' @title Get the coordinates of cells in a Seurat object
-#'
-#' @description
-#' Extract the coordinates of cells of an fov.
-#' Subset the Seurat object for cell types etc before applying this function.
-#'
-#' @param object Seurat object. Need to subset srt before applying this function.
-#' @param image.name The name of the image fov in the Seurat object.
-#' @examples
-#' coords <- getCoords.cell(srt[,srt$CellType == "Keratinocyte"], image.name = "UV109fov1")
-#' @import Seurat
-#' @export
-#'
-
-getCoords.cell <- function(object, image.name, meta.cols=NULL){
-  coords <- as.data.frame(object@images[[image.name]]@boundaries$centroids@coords)
-  rownames(coords) <- object@images[[image.name]]@boundaries$centroids@cells
-  if (!is.null(meta.cols)){
-    meta.df <- object@meta.data[match(rownames(coords), colnames(object)), meta.cols, drop=FALSE]
-    coords <- cbind(coords, meta.df)
-  }
-  return(coords)
-}
-
-
-
-
-#' @title Get the coordinates of transcripts in a Seurat object
-#'
-#' @description
-#' Extract the coordinates of transcripts in a fov.
-#'
-#' @param object Seurat object.
-#' @param transcript The name of the transcript.
-#' @param image.name The name of the image fov in the Seurat object.
-#' @examples
-#' coords <- getCoords.transcript(srt, transcript="IFNB1", image.name="UV109fov1")
-#' @import Seurat
-#' @export
-#'
-
-getCoords.transcript <- function(object, transcript, image.name){
-  img <- object@images[[image.name]]
-  coords <- as.data.frame(img@molecules$molecules[[transcript]]@coords)
-  return(coords)
-}
-
-
-#' @title Get the coordinates and values of features in a Seurat object
-#'
-#' @description
-#' Get the coordinates of cells in an image fov together with the expression value of a gene.
-#'
-#' @param object Seurat object. Need to subset srt before applying this function.
-#' @param feature The name of the gene.
-#' @param image.name The name of the image fov in the Seurat object.
-#' @param assay The name of the assay.
-#' @param slot The slot of the assay.
-#' @examples
-#' coords <- getCoords.feature(srt, feature="IFNB1", image.name="UV109fov1", assay="seqFISH", slot="data")
-#' @import Seurat
-#' @export
-#'
-
-getCoords.feature <- function(object, feature, image.name, assay=NULL, slot="data"){
-  if (is.null(assay)){
-    assay <- srt@active.assay
-  }
-  img <- object@images[[image.name]]
-  coords <- as.data.frame(img@boundaries$centroids@coords)
-  ind.img <- colnames(object) %in% img@boundaries$centroids@cells
-  coords$value <- object@assays[[assay]][slot][feature, ind.img]
-  return(coords)
-}
-# coords <- getCoords.feature(srt, feature="IFNB1", image.name="UV109fov1", assay="seqFISH", slot="data")
-
-
-
-
 
 
 
@@ -261,7 +180,7 @@ getCoords.feature <- function(object, feature, image.name, assay=NULL, slot="dat
 #' @param d.cutoff Value for point further than this distance will have value 0.
 #' @param ... Other parameters. sd is the standard deviation of the normal distribtion. h is the height of the center point.
 #' @examples
-#' coords.ifnb1 <- getCoords.transcript(srt, transcript="IFNB1", image.name="UV109fov1")
+#' coords.ifnb1 <- getCoords.transcript(srt, transcript="IFNB1", fov="UV109fov1")
 #' findDistance.euclidean(0.00001,sd=1000)
 #' field <- createField(coords.ifnb1, sd=1000, h=NULL, d.cutoff=2715, scale.factor=10000)
 #' @export
@@ -293,7 +212,7 @@ createField <- function(coords, method.distr="gaussian", method.d="euclidean", w
 #' @param field A field object created by createField.
 #' @param coords A data.frame with each column as a dimension.
 #' @examples
-#' coords.moDC <- getCoords.cell(srt, ind = srt$subcelltype == "monocyte", image.name = "roi1")
+#' coords.moDC <- getCoords.cell(srt, ind = srt$subcelltype == "monocyte", fov = "roi1")
 #' values <- getValueInField(field, coords.moDC)
 #' plot(sort(values))
 #' plot(density(values))
@@ -367,16 +286,16 @@ getValueInField <- function(field, coords){
 #'
 #' @param object Seurat object.
 #' @examples
-#' binlim <- getSize(srt, image.name = "roi1")
+#' binlim <- getSize(srt, fov = "roi1")
 #' @import Seurat
 #' @export
 #'
 
-getSize <- function(object, image.name){
-  tmp.m <- sapply(object@images[[image.name]]@molecules$molecules, function(m){
+getSize <- function(object, fov){
+  tmp.m <- sapply(object@images[[fov]]@molecules$molecules, function(m){
     return(m@bbox)
   })
-  tmp.c <- object@images[[image.name]]@boundaries$centroids@coords
+  tmp.c <- object@images[[fov]]@boundaries$centroids@coords
   x.min <- min(min(tmp.m[1,]),min(tmp.c[,1]))
   x.max <- max(max(tmp.m[3,]),max(tmp.c[,1]))
   y.min <- min(min(tmp.m[2,]),min(tmp.c[,2]))
@@ -384,11 +303,6 @@ getSize <- function(object, image.name){
   res <- c(x.min-1,x.max+1,y.min-1,y.max+1)
   return(res)
 }
-
-
-
-
-
 
 
 

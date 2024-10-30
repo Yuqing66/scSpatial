@@ -58,8 +58,8 @@ addOptionalCols <- function(df, ...){
   mc <- match.call(expand.dots = FALSE)[["..."]]
 
   for (i in 1:length(dots)){
-    c <- dots[[i]]
-    if (!is.null(c)){
+    x <- dots[[i]]
+    if (!is.null(x)){
       colname <- names(dots)[i]
       if (is.null(colname) || colname=="") colname <- deparse(mc[[i]])
 
@@ -67,13 +67,102 @@ addOptionalCols <- function(df, ...){
         message(paste0(colname," already exists in the data frame."))
         next
       }
-      if (length(c) != nrow(df)){
+      if (length(x) != nrow(df)){
         stop(paste0("The length of ",colname," is not equal to the number of rows in the data frame."))
       }
-      df[colname] <- c
+      df[colname] <- x
     }
   }
   return(df)
 }
+
+
+
+
+
+
+
+
+#### get the coordinates (and values) ####
+
+#' @title Get the coordinates of cells in a Seurat object
+#'
+#' @description
+#' Extract the coordinates of cells of an fov.
+#' Subset the Seurat object for cell types etc before applying this function.
+#'
+#' @param object Seurat object. Need to subset srt before applying this function.
+#' @param fov The name of the image fov in the Seurat object.
+#' @examples
+#' coords <- getCoords.cell(srt[,srt$CellType == "Keratinocyte"], fov = "UV109fov1")
+#' @import Seurat
+#' @export
+#'
+
+getCoords.cell <- function(object, fov, meta.cols=NULL){
+  coords <- as.data.frame(object@images[[fov]]@boundaries$centroids@coords)
+  rownames(coords) <- object@images[[fov]]@boundaries$centroids@cells
+  if (!is.null(meta.cols)){
+    meta.df <- object@meta.data[match(rownames(coords), colnames(object)), meta.cols, drop=FALSE]
+    coords <- cbind(coords, meta.df)
+  }
+  return(coords)
+}
+
+
+
+
+#' @title Get the coordinates of transcripts in a Seurat object
+#'
+#' @description
+#' Extract the coordinates of transcripts in a fov.
+#'
+#' @param object Seurat object.
+#' @param transcript The name of the transcript.
+#' @param fov The name of the image fov in the Seurat object.
+#' @examples
+#' coords <- getCoords.transcript(srt, transcript="IFNB1", fov="UV109fov1")
+#' @import Seurat
+#' @export
+#'
+
+getCoords.transcript <- function(object, transcript, fov){
+  img <- object@images[[fov]]
+  coords <- as.data.frame(img@molecules$molecules[[transcript]]@coords)
+  return(coords)
+}
+
+
+#' @title Get the coordinates and values of features in a Seurat object
+#'
+#' @description
+#' Get the coordinates of cells in an image fov together with the expression value of a gene.
+#'
+#' @param object Seurat object. Need to subset srt before applying this function.
+#' @param feature The name of the gene.
+#' @param fov The name of the image fov in the Seurat object.
+#' @param assay The name of the assay.
+#' @param slot The slot of the assay.
+#' @examples
+#' coords <- getCoords.feature(srt, feature="IFNB1", fov="UV109fov1", assay="seqFISH", slot="data")
+#' @import Seurat
+#' @export
+#'
+
+getCoords.feature <- function(object, feature, fov, assay=NULL, slot="data"){
+  if (is.null(assay)){
+    assay <- srt@active.assay
+  }
+  img <- object@images[[fov]]
+  coords <- as.data.frame(img@boundaries$centroids@coords)
+  ind.img <- colnames(object) %in% img@boundaries$centroids@cells
+  coords$value <- object@assays[[assay]][slot][feature, ind.img]
+  return(coords)
+}
+# coords <- getCoords.feature(srt, feature="IFNB1", fov="UV109fov1", assay="seqFISH", slot="data")
+
+
+
+
 
 

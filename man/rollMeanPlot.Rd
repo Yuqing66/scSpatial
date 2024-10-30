@@ -7,8 +7,8 @@
 rollMeanPlot(
   x,
   y,
-  group = NULL,
-  split = NULL,
+  group.vec = NULL,
+  split.vec = NULL,
   window.prop = 0.05,
   window.n = NULL,
   trans = NULL
@@ -17,15 +17,15 @@ rollMeanPlot(
 \arguments{
 \item{x, y}{A vector of x and y values.}
 
-\item{group}{Optional. A vector of group for coloring.}
-
-\item{split}{Optional. A vector of split for facetting.}
-
 \item{window.prop}{Proportion of data used in the sliding window for smoothing.}
 
 \item{window.n}{Number of points in the sliding window for smoothing. window.prop will be ignored if window.n is provided.}
 
 \item{trans}{Transformation of the x-axis.}
+
+\item{group}{Optional. A vector of group for coloring.}
+
+\item{split}{Optional. A vector of split for facetting.}
 }
 \description{
 Visualize the change of y along a continuous variable x, with moving window for smoothing.

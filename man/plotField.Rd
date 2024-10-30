@@ -19,7 +19,7 @@ plotField(field, nbins, binlim, shape = "long")
 Calculate the value of the field over the 2d space. The result can be in long or wide format for downstream plotting.
 }
 \examples{
-binlim.srt <- getSize(srt, image.name = "UV109fov1")
+binlim.srt <- getSize(srt, fov = "UV109fov1")
 df.wide <- plotField(field, nbins = 100, binlim = binlim.srt, shape = "wide")
 plot.mt(z=df.wide)
 df.long <- plotField(field, nbins = 100, binlim = binlim.srt, shape = "long")

@@ -4,7 +4,7 @@
 \alias{getSize}
 \title{Report the size of the image}
 \usage{
-getSize(object, image.name)
+getSize(object, fov)
 }
 \arguments{
 \item{object}{Seurat object.}
@@ -13,5 +13,5 @@ getSize(object, image.name)
 Output in the order of: x.min, x.max, y.min, y.max.
 }
 \examples{
-binlim <- getSize(srt, image.name = "roi1")
+binlim <- getSize(srt, fov = "roi1")
 }
