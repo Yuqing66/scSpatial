@@ -83,7 +83,7 @@ ImageDimPlot.ssc <- function(object, fov, group.by=NULL, split.by=NULL, size=0.1
   }
 
   g <- ggplot() +
-    geom_point(data = df, mapping = aes(x=y,y=x,alpha=highlight,size=highlight,col=get(group.by)), shape=16)+
+    geom_point(data = df, mapping = aes(x=x,y=y,alpha=highlight,size=highlight,col=get(group.by)), shape=16)+
     theme_classic() +
     theme(axis.title = element_blank(), axis.text = element_blank(), axis.ticks = element_blank(), axis.line = element_blank())  +
     theme(panel.grid = element_blank()) +
