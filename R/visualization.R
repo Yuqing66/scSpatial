@@ -55,7 +55,7 @@ SankeyPlot <- function(object, groups, width.node = 20, size.text = 12, height =
   }
   
   if (is.null(width)){
-    width <- length(groups) * 200
+    width <- (length(groups) -1) * 250
   }
   
   # Create Sankey diagram
@@ -81,7 +81,7 @@ SankeyPlot <- function(object, groups, width.node = 20, size.text = 12, height =
       filename <- paste0("sankey_",paste0(groups, collapse = "_"),".html")
     }
     saveNetwork(sankey_diagram, filename, selfcontained = TRUE)
-    webshot(filename, sub(".html",".pdf",filename))
+    webshot(filename, sub(".html",".pdf",filename), vwidth = width + 50)
   }
   
   return(sankey_diagram)

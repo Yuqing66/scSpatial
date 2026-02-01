@@ -35,7 +35,7 @@
 ImageDimPlot.ssc <- function(object, fov, group.by=NULL, split.by=NULL, size=0.1, cols=NULL, alpha=1,
                              highlight.by=NULL, highlight.groups=NULL, highlight.size=0.2, highlight.cols=NULL, highlight.alpha=1,
                              molecules=NULL, molecules.size=0.1, molecules.cols=NULL, molecules.alpha=1,
-                             dark.background=T, crop=NULL, flip=F){
+                             dark.background=T, crop=NULL, flip=F, ligend.succinct=T){
   # get coordinates and metadata
   df <- data.frame(x=object@images[[fov]]$centroids@coords[,1],
                    y=object@images[[fov]]$centroids@coords[,2])
@@ -118,9 +118,20 @@ ImageDimPlot.ssc <- function(object, fov, group.by=NULL, split.by=NULL, size=0.1
     }
   }
 
-  if (!is.null(cols)){
+
+  if (ligend.succinct & (!is.null(highlight.groups) | !is.null(molecules))){
+    if (!is.null(highlight.groups)){
+      tmp <- unique(df.meta[df.meta[,highlight.by] %in% highlight.groups, group.by])
+      genes.ligend <- c(tmp, molecules)
+    }else{
+      genes.ligend <- molecules
+    }
+    g <- g + scale_color_manual(values = cols, breaks = genes.ligend)
+  }else{
     g <- g + scale_color_manual(values = cols)
   }
+  
+  
 
 
   if (!is.null(split.by)){
@@ -128,8 +139,10 @@ ImageDimPlot.ssc <- function(object, fov, group.by=NULL, split.by=NULL, size=0.1
   }
 
   if (!is.null(crop)){
-    if (crop == T){
-      crop <- c(min(df$x)-1,max(df$x)+1, min(df$y)-1,max(df$y)+1)
+    if (length(crop) == 1){
+      if (crop){
+        crop <- c(min(df$x)-1,max(df$x)+1, min(df$y)-1,max(df$y)+1)
+      }
     }else if (length(crop) != 4){
       message("Please provide crop in format: c(min.x, max.x, min.y, max.y)")
     }
@@ -152,13 +165,15 @@ ImageDimPlot.ssc <- function(object, fov, group.by=NULL, split.by=NULL, size=0.1
 #' @param initial Name of cell coordinates to start with. Embedding name in srt@reductions, or "images" for spatial slide.
 #' @param final Name of cell coordinates to transition into.
 #' @param group.by The name of metadata column to color by.
-#' @param fov Slides to include. "all" or a vector of slide names.
+#' @param fov Slides to include. NULL for all fovs or a vector of slide names.
 #' @param ncol Number of fovs in a row.
 #' @param fov.size c(width, height) to specify the size of fov panel grid.
 #' @param point.size Point size for cells.
 #' @param point.alpha Point transparency.
 #' @param image.coord.flip To match the Seurat output, the x and y axises are by default flipped.
 #' @param match.scale.by Scale the initial and final coordinates. NULL, x, y, or both.
+#' @param plot.legend Logical. If TRUE, plot the legend. By default FALSE.
+#' @param plot.boundaryFrames Logical. If TRUE, plot the boundary frames, and use list as the output. By default TRUE.
 #' @examples
 #' g <- plotTransition(srt, initial="umap", final="images", group.by="subcelltype", fov=NULL, point.size = 0.3, match.scale.by = "y")
 #' animate(g, duration = 7, fps = 10, start_pause = 10, end_pause = 10,
@@ -170,7 +185,9 @@ ImageDimPlot.ssc <- function(object, fov, group.by=NULL, split.by=NULL, size=0.1
 
 plotTransition <- function(srt, initial="umap", final="images", group.by=NULL,
                            fov=NULL, ncol=NULL, fov.size=NULL,
-                           point.size=0.5, point.alpha=1, image.coord.flip=T, match.scale.by="y"){
+                           point.size=0.5, point.alpha=1, image.coord.flip=T, 
+                           match.scale.by="y", plot.legend=FALSE, plot.boundaryFrames=T,
+                           cols=NULL){
   coords_initial <- getCoords(srt, name = initial, fov=fov, metadata=group.by)
   coords_final <- getCoords(srt, name = final, fov=fov, metadata=group.by)
   #
@@ -267,7 +284,12 @@ plotTransition <- function(srt, initial="umap", final="images", group.by=NULL,
   coords_final$frame <- 2
   animation.data <- rbind(coords_initial, coords_final)
 
-  g <- ggplot(animation.data, aes(x=x,y=y,col=!!sym(group.by))) +
+  aes_mapping <- aes(x = x, y = y)
+  if (!is.null(group.by)) {
+    aes_mapping <- modifyList(aes_mapping, aes(color = !!sym(group.by)))
+  }
+  
+  g <- ggplot(animation.data, aes_mapping) +
     geom_point(size=point.size, alpha=point.alpha) +
     coord_fixed(ratio = 1) +
     transition_time(frame) +
@@ -275,9 +297,40 @@ plotTransition <- function(srt, initial="umap", final="images", group.by=NULL,
           panel.grid = element_blank(),
           axis.line = element_blank(),
           axis.text = element_blank(),
-          axis.title = element_blank())
+          axis.title = element_blank(),
+          axis.ticks = element_blank())
+  g.list <- list()
+  g.list[[1]] <- g
+  
+  if (plot.boundaryFrames){
+    for (i in 2:3){
+      ind.frame <- i-1
+      g.list[[i]] <- ggplot(animation.data[animation.data$frame==ind.frame,], 
+                            aes_mapping) +
+        geom_point(size=point.size, alpha=point.alpha) +
+        coord_fixed(ratio = 1) +
+        theme(panel.background = element_blank(),
+              panel.grid = element_blank(),
+              axis.line = element_blank(),
+              axis.text = element_blank(),
+              axis.title = element_blank(),
+              axis.ticks = element_blank())
+    }
+    names(g.list) <- c("animation","initial","final")
+  }
+  
+  if (!plot.legend){
+    g.list <- lapply(g.list, function(x) x + theme(legend.position = "none"))
+  }
+  if (!is.null(cols)) {
+    g.list <- lapply(g.list, function(x) x + scale_color_manual(values = cols))
+  }
 
-  return(g)
+  if (length(g.list) == 1){
+    return(g.list[[1]])
+  }
+  
+  return(g.list)
 }
 
 
@@ -453,6 +506,108 @@ ImageDimPlot.path <- function(ggplot.object, path.coords, ends.close = F,
   g <- ggplot.object + geom_path(data = path.coords, aes(x=x,y=y), color = path.col, size = path.size, alpha = path.alpha)
   return(g)
 }
+
+
+
+
+
+
+
+
+
+
+
+
+library(spatstat.geom)
+library(spatstat.explore)
+library(dplyr)
+library(ggplot2)
+library(viridisLite)  # for palettes if needed
+ImageFeaturePlot.contour <- function(object, feature, fov, 
+                                     plot.all = T, group.by = NULL, size = 0.1, cols = NULL, alpha = 0.5,
+                                     sigma = NULL, n_levels = 6, color_palette = NULL, threshold = 0.9, contour.alpha = 0.7,
+                                     dark.background = T, flip = F){
+  
+  df <- getCoords.cell(object, fov = fov)
+  df$expr <- object@assays$seqFISH@layers$data[rownames(object) == feature, match(rownames(df), colnames(object)), drop = TRUE]
+  
+  if (!is.null(group.by)){
+    df$group.by <- object@meta.data[,group.by]
+  }
+  
+  # 1. Define observation window (rectangle; replace with polygon mask if you have tissue boundary)
+  win <- owin(range(df$x), range(df$y))
+  
+  # 2. Point pattern with marks = expression
+  pp <- ppp(df$x, df$y, window = win, marks = df$expr)
+  
+  # 3. Choose bandwidth (sigma). Automatic selectors often oversmooth / undersmooth for sparse genes.
+  # or set manually, e.g. sigma <- 40  (in your spatial units)
+  sigma <- sigma %||% bw.diggle(pp)
+  
+  # 4a. Local transcript *sum* surface (kernel-weighted)
+  sum_surface <- density(pp, weights = pp$marks, sigma = sigma, at = "pixels", edge=TRUE)
+  # units: (sum of expression) / area
+  
+  df_sum  <- as.data.frame(sum_surface)  # columns: x, y, value
+  
+  # only plot the top n% of the values
+  thr <- quantile(df_sum$value, threshold, na.rm=TRUE)
+  maxv <- max(df_sum$value, na.rm=TRUE)
+  breaks <- seq(thr, maxv, length.out = n_levels + 1)
+  
+  g <- ggplot() + theme_void()
+  
+  if (plot.all){
+    if (is.null(group.by)){
+      g <- g + geom_point(data = df, aes(x, y), color="grey", size=size, alpha = alpha)
+    }else{
+      g <- g + geom_point(data = df, aes(x, y, col = group.by), size=size, alpha = alpha)
+      if (!is.null(cols)){
+        g <- g + scale_color_manual(values = cols, drop = FALSE)
+      }
+    }
+  }
+  
+  g <- g + geom_contour_filled(data = df_sum, aes(x=x, y=y, z = value), alpha = contour.alpha, breaks = breaks)
+  
+  if (dark.background){
+    g <- g + theme(panel.background = element_rect(fill = "black", color = "black"))
+    color_palette = color_palette %||% c("#3B0047","#D700FF")
+  }else{
+    color_palette = color_palette %||% c("#F7E7E6","red")
+  }
+  g <- g + scale_fill_manual(
+    values = colorRampPalette(color_palette)(length(breaks) - 1),
+    name = paste0("value ≥ ", signif(thr,3)),
+    drop = FALSE)
+  
+  g <- g + coord_equal() # coord_fixed()
+  
+  return(g)
+  
+}
+
+
+
+
+
+
+
+
+
+
+
+getImageSize <- function(object, fov){
+  mat <- srt@images[[fov]]@boundaries$centroids@bbox
+  w <- mat[1,2] - mat[1,1]
+  h <- mat[2,2] - mat[2,1]
+  
+  res <- c(w,h)
+  names(res) <- c("width","height")
+  return(res)
+}
+
 
 
 

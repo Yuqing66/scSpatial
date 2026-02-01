@@ -162,7 +162,7 @@ plotContour <- function(df, flip=T, shape="long"){
 #' @title ImageDimPlot color by provided values.
 #' @description
 #' Plot points on a 2d space color by values. If Seurat object is provided, plot the location of the cells beneath.
-#' @param coords A data.frame with columns x, y.
+#' @param coords A data.frame with columns x, y. If not provided, get coordinates from Seurat object based on names of values.
 #' @param values A vector of values for coloring.
 #' @param alpha Transparency of the points.
 #' @param size Size of the points.
@@ -179,7 +179,7 @@ plotContour <- function(df, flip=T, shape="long"){
 #'
 
 
-ImageDimPlot.values <- function(coords, values, alpha = 1, size = 0.8, flip=F,
+ImageDimPlot.values <- function(coords=NULL, values, alpha = 1, size = 0.8, flip=F,
                                 color=c("grey","purple","red","orange","yellow"),
                                 srt=NULL, fov=NULL, alpha.srt=0.1, size.srt=0.1, color.srt="lightblue",dark.background=T){
   g <- ggplot()
@@ -187,6 +187,12 @@ ImageDimPlot.values <- function(coords, values, alpha = 1, size = 0.8, flip=F,
     df <- data.frame(x=srt@images[[fov]]$centroids@coords[,1],
                      y=srt@images[[fov]]$centroids@coords[,2])
     g <- g + geom_point(data = df, mapping = aes(x=x,y=y), alpha=alpha.srt, size=size.srt, color=color.srt)
+  }
+  if (is.null(coords)){
+    if (is.null(names(values)) | is.null(srt)){
+      stop("Please provide coords, or values with names as cell types matching to the Seurat object")
+    }
+    coords <- df[match(names(values), srt@images[[fov]]$centroids@cells), ]
   }
   coords$value <- values
   g <- g + geom_point(data = coords, mapping = aes(x=x,y=y,col=value), alpha = alpha, size = size) +
@@ -239,6 +245,7 @@ ImageDimPlot.values <- function(coords, values, alpha = 1, size = 0.8, flip=F,
 #' @import Seurat ggforce
 #' @export
 
+library(ggforce)
 
 ImageDimPlot.sizeGuide <- function(object, fov, group.by=NULL, size = 0.2, cols = NULL, alpha = 1,
                        radii = c(100,200,300,400,500,700,1000), gap = NULL,
@@ -296,7 +303,8 @@ ImageDimPlot.sizeGuide <- function(object, fov, group.by=NULL, size = 0.2, cols 
 
   g <- ggplot() +
     geom_point(df, mapping = aes(x=x,y=y,col=.data[[group.by]]), size = size, alpha = alpha) +
-    theme(panel.grid = element_blank()) +
+    theme(panel.grid = element_blank(),
+          axis.title = element_blank()) +
     coord_fixed(ratio = 1)
   if (!is.null(cols)) {
     g <- g + scale_color_manual(values = cols)

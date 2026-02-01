@@ -141,3 +141,104 @@ image_calcDistanceTo <- function(object, fov, shape = "line", ...){
 }
 
 
+
+
+
+
+
+
+
+
+
+
+getCellsInPath <- function(cells.coords, path.coords){
+  # label the cells in vs out
+  inside <- point.in.polygon(point.x = cells.coords[,1],
+                             point.y = cells.coords[,2],
+                             pol.x = c(path.coords$x, path.coords$x[1]),
+                             pol.y = c(path.coords$y, path.coords$y[1]))
+  if (is.null(rownames(cells.coords))){
+    res <- inside == 1
+  }else{
+    res <- rownames(cells.coords)[inside == 1]
+  }
+  return(res)
+}
+
+
+
+
+
+
+
+
+
+
+
+
+# need to subset the object to only cells used to calculate the expression / location
+# center.cellid should be the cell names. the boolean vector for the specific fov would work but is more error prone.
+# if fovs is NULL, calculate for all images
+# if include.center, the center.coords should be cells and the expression of it will be included.
+calcLocalExpression <- function(srt, center.coords=NULL, center.cellid=NULL, radius, genes,
+                                assay=NULL, fovs = NULL, slot = "data", include.center = FALSE){
+  if (is.null(assay)){
+    assay <- srt@active.assay
+  }
+  if (is.null(fovs)){
+    fovs <- names(srt@images)
+  }
+  radius_2 <- radius^2
+  
+  # calculate for each fov separately
+  loc.exp <- data.frame()
+  for (i in 1:length(fovs)){
+    fov <- fovs[i]
+    
+    # get the coordinates of the cells to calculate for, if not provided
+    if (is.null(center.coords)){
+      center.coords.fov <- getCoords.cell(srt, fov = fov)
+      if (!is.null(center.cellid)){
+        center.coords.fov <- center.coords.fov[rownames(center.coords.fov) %in% center.cellid, , drop = FALSE]
+      }
+    }
+    
+    # get the expression matrix of specific genes of all cells in srt
+    exprs.coords <- getCoords.cell(srt, fov = fov)
+    if (!include.center){
+      exprs.coords <- exprs.coords[!rownames(exprs.coords) %in% rownames(center.coords.fov), ]
+    }
+    exprs <- t(srt@assays[[assay]]@layers[[slot]][match(genes, rownames(srt)), match(rownames(exprs.coords), colnames(srt))])
+    colnames(exprs) <- genes
+    
+    # calculate the distance matrix between the center cells and all other cells
+    loc.exp.fov <- apply(center.coords.fov, 1, function(r){
+      x <- r[1]
+      y <- r[2]
+      ind <- (exprs.coords[,"x"]-x)^2 + (exprs.coords[,"y"]-y)^2 < radius_2
+      if (sum(ind) > 0){
+        # calculate the mean expression of the genes in the surrounding cells
+        loc.exp.fov <- colSums(exprs[ind, , drop = F], na.rm = TRUE)
+      } else {
+        loc.exp.fov <- rep(NA, length(genes))
+      }
+      return(loc.exp.fov)
+    })
+    loc.exp.fov <- as.data.frame(t(loc.exp.fov))
+    rownames(loc.exp.fov) <- rownames(center.coords.fov)
+    colnames(loc.exp.fov) <- genes
+    loc.exp.fov$fov <- fov
+    
+    loc.exp <- rbind(loc.exp, loc.exp.fov)
+  }
+  
+  colnames(loc.exp) <- c(paste0("LocalExp_",genes, "_radius", radius, "_", assay, "_", slot), "fov")
+  
+  return(loc.exp)
+}
+
+
+
+
+
+

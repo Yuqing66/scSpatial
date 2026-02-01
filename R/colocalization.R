@@ -229,6 +229,11 @@ getValueInField <- function(field, coords){
     att <- attributes(f.distr)
     formals(f.distr)[names(field$parameters)] <- field$parameters
     attributes(f.distr) <- att[names(att) != "srcref"]
+  }else if (field$method.distr == "uniform"){
+    f.distr <- function(d){
+      y <- rep(1, length(d)) # uniform distribution
+      return(y)
+    }
   }else{
     stop("distribution method not supported")
   }

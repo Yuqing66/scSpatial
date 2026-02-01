@@ -100,6 +100,7 @@ addOptionalCols <- function(df, ...){
 #'
 
 getCoords.cell <- function(object, fov, meta.cols=NULL){
+  fov <- as.character(fov)
   coords <- as.data.frame(object@images[[fov]]@boundaries$centroids@coords)
   rownames(coords) <- object@images[[fov]]@boundaries$centroids@cells
   if (!is.null(meta.cols)){
@@ -160,6 +161,58 @@ getCoords.feature <- function(object, feature, fov, assay=NULL, slot="data"){
   return(coords)
 }
 # coords <- getCoords.feature(srt, feature="IFNB1", fov="UV109fov1", assay="seqFISH", slot="data")
+
+
+
+
+
+
+
+
+
+
+# plot 2d raster density plot
+# x, y are vectors for coordinates of z; z is a count matrix
+library(reshape2)
+plot.mt <- function(x=NULL,y=NULL,z,flip=F){
+  wide <- data.frame(z)
+  if (is.null(x)) x <- 1:ncol(z)
+  if (is.null(y)) y <- 1:nrow(z)
+  colnames(wide) <- x
+  wide$y <- y
+  long <- melt(wide, id.vars = c("y"),
+               variable.name = "x",
+               value.name = "z")
+  long$x <- as.numeric(as.vector(long$x)) # factor to numeric
+  g <- ggplot(long,aes(x=x,y=y))+
+    geom_tile(aes(fill=z,color=z),linewidth=0)+
+    # color and size are used to remove the white lines between tiles
+    theme(axis.title = element_blank(),axis.text = element_blank(),
+          axis.ticks = element_blank(),legend.title = element_blank())
+  if (flip){
+    g <- g + coord_flip()
+  }
+  return(g)
+}
+# plot.mt(z=df.wide)
+
+# colnames of df should be c("x","y","z")
+plot.mt.long <- function(df, flip=F){
+  g <- ggplot(df,aes(x=x,y=y))+
+    geom_tile(aes(fill=z,color=z),linewidth=0.5)+
+    # color and size are used to remove the white lines between tiles
+    theme(axis.title = element_blank(),axis.text = element_blank(),
+          axis.ticks = element_blank(),legend.title = element_blank())
+  if (flip){
+    g <- g + coord_flip()
+  }
+  return(g)
+}
+
+
+
+
+
 
 
 
