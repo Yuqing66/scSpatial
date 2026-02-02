@@ -20,6 +20,7 @@
 #' @param molecules.size Point size of molecules.
 #' @param molecules.cols Named vector with molecules as names and colors as values.
 #' @param molecules.alpha Transparency of molecules to plot.
+#' @param legend.concise Logical; if TRUE, show only highlighted groups and molecules in legend.
 #' @param dark.background Logical; use a black panel background. By default TRUE.
 #' @param crop If TRUE, crop to the extent of cells/molecules. Or a numeric vector
 #'   with four numbers specifying `c(min.x, max.x, min.y, max.y)`.
@@ -51,7 +52,7 @@ ImageDimPlot.ssc <- function (object, fov, group.by = NULL, split.by = NULL, siz
                               cols = NULL, alpha = 1, highlight.by = NULL, highlight.groups = NULL, 
                               highlight.size = 0.2, highlight.cols = NULL, highlight.alpha = 1, 
                               molecules = NULL, molecules.size = 0.1, molecules.cols = NULL, 
-                              molecules.alpha = 1, dark.background = T, crop = NULL, flip = F, 
+                              molecules.alpha = 1, legend.concise = TRUE, dark.background = T, crop = NULL, flip = F, 
                               scalebar.length = NULL, scalebar.numConv = 1, scalebar.unit = NULL, scalebar.position = "bottomright", 
                               scalebar.color = NULL, scalebar.text.size = 3, scalebar.margin = 0.03) 
 {
@@ -131,6 +132,19 @@ ImageDimPlot.ssc <- function (object, fov, group.by = NULL, split.by = NULL, siz
   cols.default <- color_scale$palette.cache
   names(cols.default) <- sort(unique(df[[group.by]]))
   
+  legend_breaks <- NULL
+  if (isTRUE(legend.concise)) {
+    legend_breaks <- c()
+    if (!is.null(highlight.groups)) {
+      legend_breaks <- c(legend_breaks, highlight.groups)
+    }
+    if (!is.null(molecules) && length(valid_molecules) > 0) {
+      legend_breaks <- c(legend_breaks, valid_molecules)
+    }
+    legend_breaks <- as.character(unique(legend_breaks))
+    legend_breaks <- legend_breaks[legend_breaks %in% names(cols.default)]
+  }
+  
   effective.cols <- cols
   if (!is.null(highlight.cols)) {
     if (is.null(effective.cols)) {
@@ -145,7 +159,13 @@ ImageDimPlot.ssc <- function (object, fov, group.by = NULL, split.by = NULL, siz
     effective.cols[names(molecules.cols)] <- molecules.cols
   }
   if (!is.null(effective.cols)) {
-    g <- g + scale_color_manual(values = effective.cols)
+    if (is.null(legend_breaks)) {
+      g <- g + scale_color_manual(values = effective.cols)
+    } else {
+      g <- g + scale_color_manual(values = effective.cols, breaks = legend_breaks)
+    }
+  } else if (!is.null(legend_breaks)) {
+    g <- g + scale_color_discrete(breaks = legend_breaks)
   }
   
   if (!is.null(split.by)) {
@@ -217,7 +237,7 @@ ImageDimPlot.ssc <- function (object, fov, group.by = NULL, split.by = NULL, siz
     }
     
     g <- g +
-      annotate("segment", x = x_start, xend = x_end, y = y_start, yend = y_start, colour = bar_colour, size = 0.5) +
+      annotate("segment", x = x_start, xend = x_end, y = y_start, yend = y_start, colour = bar_colour, linewidth = 0.5) +
       annotate("text", x = (x_start + x_end) / 2, y = label_y, label = label, colour = bar_colour, size = scalebar.text.size, vjust = text_vjust)
   }
   
@@ -774,6 +794,5 @@ getImageSize <- function(object, fov){
   names(res) <- c("width","height")
   return(res)
 }
-
 
 

@@ -228,24 +228,28 @@ plot.mt.long <- function(df, flip=F){
 #' coordinates and their bounding boxes for 90-degree rotations.
 #'
 #' @param coords Matrix-like object with x/y columns to rotate.
-#' @param bbox Two-row bounding box matrix with rows `x` and `y` and columns
-#'   `min`/`max`.
+#' @param another.bbox Two-row bounding box matrix with rows `x` and `y` and columns
+#'   `min`/`max`. If provided, will use bbox for the original min max values.
 #' @param angle Rotation angle in degrees. Must be 90, 180, or 270.
 #'
 #' @return A list containing `coords` (rotated coordinates) and `bbox`
 #'   (updated bounding box).
 #' @noRd
-rotate_component_coords <- function(coords, bbox, angle) {
-  if (is.null(coords) || nrow(coords) == 0) {
-    return(list(coords = coords, bbox = bbox))
-  }
+rotate_component_coords <- function(coords, another.bbox = NULL, angle) {
   x <- coords[, 1]
   y <- coords[, 2]
   
-  x0 <- min(x)
-  y0 <- min(y)
-  width <- max(x) - x0
-  height <- max(y) - y0
+  if (!is.null(another.bbox)) {
+    x0 <- another.bbox["x", "min"]
+    y0 <- another.bbox["y", "min"]
+    width <- another.bbox["x", "max"] - x0
+    height <- another.bbox["y", "max"] - y0
+  } else {
+    x0 <- min(x)
+    y0 <- min(y)
+    width <- max(x) - x0
+    height <- max(y) - y0
+  }
   
   rel_x <- coords[, 1] - x0
   rel_y <- coords[, 2] - y0
@@ -271,23 +275,14 @@ rotate_component_coords <- function(coords, bbox, angle) {
   list(coords = rotated, bbox = bbox)
 }
 
-rotate_spatial_component <- function(component, angle) {
+rotate_spatial_component <- function(component, another.bbox = NULL, angle) {
   if (is.null(component)) {
     return(component)
   }
-  rotated <- rotate_component_coords(component@coords, component@bbox, angle)
+  rotated <- rotate_component_coords(component@coords, another.bbox, angle)
   component@coords <- rotated$coords
   component@bbox <- rotated$bbox
   component
-}
-
-rotate_molecule_container <- function(container, angle) {
-  if (is.null(container) || length(container$molecules) == 0) {
-    return(container)
-  }
-  
-  container$molecules <- lapply(container$molecules, rotate_spatial_component, angle = angle)
-  container
 }
 
 #' Rotate spatial coordinates stored in a Seurat field of view
@@ -332,19 +327,18 @@ rotateCoords <- function(srt, fov, angle) {
   fov_image <- srt@images[[fov]]
   
   if (!is.null(fov_image$centroids)) {
-    fov_image[["centroids"]] <- rotate_spatial_component(fov_image$centroids, angle)
-  }
-  
-  if (!is.null(fov_image@boundaries) && !is.null(fov_image@boundaries$centroids)) {
-    fov_image@boundaries[["centroids"]] <- rotate_spatial_component(fov_image@boundaries$centroids, angle)
+    fov_image[["centroids"]] <- rotate_spatial_component(fov_image$centroids, another.bbox = NULL, angle = angle)
   }
   
   if (!is.null(fov_image@molecules)) {
-    fov_image@molecules <- rotate_molecule_container(fov_image@molecules, angle)
+    container <- fov_image@molecules
+    for (i in seq_along(container$molecules)) {
+      mol <- container$molecules[[i]]
+      container[["molecules"]][[i]] <- rotate_spatial_component(mol, another.bbox = fov_image$centroids@bbox, angle = angle)
+    }
+    fov_image@molecules <- container
   }
   
   srt@images[[fov]] <- fov_image
   srt
 }
-
-

@@ -21,52 +21,76 @@ ImageDimPlot.ssc(
   molecules.size = 0.1,
   molecules.cols = NULL,
   molecules.alpha = 1,
+  legend.concise = TRUE,
   dark.background = T,
   crop = NULL,
-  flip = F
+  flip = F,
+  scalebar.length = NULL,
+  scalebar.numConv = 1,
+  scalebar.unit = NULL,
+  scalebar.position = "bottomright",
+  scalebar.color = NULL,
+  scalebar.text.size = 3,
+  scalebar.margin = 0.03
 )
 }
 \arguments{
-\item{object}{Seurat object.}
+\item{object}{Seurat object with spatial images and centroids.}
 
-\item{fov}{The fov to plot.}
+\item{fov}{Name of the field of view to plot (must exist in \code{object@images}).}
 
-\item{group.by}{Column name in the metadata to group color the cells}
+\item{group.by}{Metadata column used to color cells. Defaults to \code{ident}.}
 
-\item{split.by}{Column name in the metadata to split the cells}
+\item{split.by}{Metadata column used to facet the plot.}
 
-\item{size}{Size of the cells.}
+\item{size}{Base point size for cells.}
 
-\item{cols}{A named vector with group categories as names and colors as values.}
+\item{cols}{Named vector with group categories as names and colors as values.}
 
 \item{alpha}{Transparency of the cells.}
 
-\item{highlight.by}{The name of metadata column containing the highlight category labels. Same as group.by by default.}
+\item{highlight.by}{Metadata column containing highlight category labels. Defaults to \code{group.by}.}
 
-\item{highlight.groups}{A vector specifying categories to highlight.}
+\item{highlight.groups}{Vector specifying categories to highlight.}
 
 \item{highlight.size}{Point size for highlighted cells.}
 
-\item{highlight.cols}{A named vector with highlight category labels as names and colors as values.}
+\item{highlight.cols}{Named vector with highlight category labels as names and colors as values.}
 
-\item{highlight.alpha}{Transparency of highlighed cell points.}
+\item{highlight.alpha}{Transparency of highlighted cell points.}
 
-\item{molecules}{Molecules to plot the location.}
+\item{molecules}{Character vector of molecules to plot.}
 
 \item{molecules.size}{Point size of molecules.}
 
-\item{molecules.cols}{A named vector with molecules as names and colors as values.}
+\item{molecules.cols}{Named vector with molecules as names and colors as values.}
 
 \item{molecules.alpha}{Transparency of molecules to plot.}
 
-\item{crop}{If TRUE, crop off the region with no cells or molecules to plot. Or a vector with four numbers specifying c(min.x, max.x, min.y, max.y)}
+\item{legend.concise}{Logical; if TRUE, show only highlighted groups and molecules in legend.}
 
-\item{flip}{To match the Seurat output, the x and y axises are by default flipped.}
+\item{dark.background}{Logical; use a black panel background. By default TRUE.}
 
-\item{dark.backgrount}{Black backgrount. By default TRUE.}
+\item{crop}{If TRUE, crop to the extent of cells/molecules. Or a numeric vector with four numbers specifying \code{c(min.x, max.x, min.y, max.y)}.}
+
+\item{flip}{Logical; kept for compatibility with Seurat output (currently unused).}
+
+\item{scalebar.length}{Optional positive numeric length of the scale bar in image units.}
+
+\item{scalebar.numConv}{Numeric conversion factor applied to the scale bar label.}
+
+\item{scalebar.unit}{Unit label appended to the scale bar text.}
+
+\item{scalebar.position}{One of \code{bottomright}, \code{bottomleft}, \code{topright}, \code{topleft}, or a numeric length-2 vector specifying the \code{(x, y)} start position.}
+
+\item{scalebar.color}{Color for the scale bar and label. Defaults to white on dark background and black otherwise.}
+
+\item{scalebar.text.size}{Text size for the scale bar label.}
+
+\item{scalebar.margin}{Margin as a fraction of the plot span when positioning the scale bar.}
 }
 \description{
-Similar to ImageDimPlot in Seurat but allowing highlight of specific categories in group.by.
+Similar to Seurat's ImageDimPlot but allows highlighting specific categories and optionally overlaying molecule locations. Supports faceting by metadata column, cropping, and adding a scale bar.
 }
 \examples{
 ImageDimPlot.ssc(srt, fov = "UV109fov1", group.by = "celltype_res0.1")
