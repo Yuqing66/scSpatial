@@ -523,10 +523,45 @@ library(spatstat.explore)
 library(dplyr)
 library(ggplot2)
 library(viridisLite)  # for palettes if needed
+#' @title Contour plot of spatial feature expression
+#'
+#' @description
+#' Plot filled contours of a feature's spatial expression by applying kernel
+#' density estimation to point-marked expression values in a field of view.
+#'
+#' @param object Seurat object containing spatial coordinates and expression data.
+#' @param feature Feature (e.g., gene) name to visualize.
+#' @param fov Field of view (image) name to plot.
+#' @param plot.all If TRUE, plot all cell centroids beneath the contours.
+#' @param group.by Metadata column name for coloring cell points when `plot.all = TRUE`.
+#' @param size Point size for cell centroids.
+#' @param cols Named vector of colors for `group.by`.
+#' @param alpha Transparency for cell centroids.
+#' @param sigma Bandwidth for kernel density; defaults to `bw.diggle(pp)` when NULL.
+#' @param n_levels Number of contour levels to draw.
+#' @param color_palette Vector of colors to interpolate for filled contours.
+#' @param threshold Quantile threshold (0-1) for contouring the highest values.
+#' @param contour.alpha Transparency for contour fills.
+#' @param dark.background If TRUE, use a dark plot background and palette.
+#' @param flip If TRUE, flip axes to match Seurat plotting orientation.
+#' @param scalebar.length Length of the scalebar in coordinate units; if NULL, no scalebar is drawn.
+#' @param scalebar.numConv Multiplicative conversion from coordinate units to display units.
+#' @param scalebar.unit Unit label to append to the scalebar.
+#' @param scalebar.position Position of the scalebar; one of "bottomright", "bottomleft",
+#'   "topright", "topleft", or a numeric length-2 vector.
+#' @param scalebar.color Color of the scalebar; defaults to white on dark background and black otherwise.
+#' @param scalebar.text.size Text size for the scalebar label.
+#' @param scalebar.margin Fractional margin from plot edges for automatic positions.
+#' @return A ggplot object.
+#' @examples
+#' g <- ImageFeaturePlot.contour(seqfish, feature = "IFNB1", fov = "HS009fov1")
+#' 
 ImageFeaturePlot.contour <- function(object, feature, fov, 
                                      plot.all = T, group.by = NULL, size = 0.1, cols = NULL, alpha = 0.5,
                                      sigma = NULL, n_levels = 6, color_palette = NULL, threshold = 0.9, contour.alpha = 0.7,
-                                     dark.background = T, flip = F){
+                                     dark.background = T, flip = F,
+                                     scalebar.length = NULL, scalebar.numConv = 1, scalebar.unit = NULL, scalebar.position = "bottomright",
+                                     scalebar.color = NULL, scalebar.text.size = 3, scalebar.margin = 0.03){
   
   df <- getCoords.cell(object, fov = fov)
   df$expr <- object@assays$seqFISH@layers$data[rownames(object) == feature, match(rownames(df), colnames(object)), drop = TRUE]
@@ -542,7 +577,7 @@ ImageFeaturePlot.contour <- function(object, feature, fov,
   pp <- ppp(df$x, df$y, window = win, marks = df$expr)
   
   # 3. Choose bandwidth (sigma). Automatic selectors often oversmooth / undersmooth for sparse genes.
-  # or set manually, e.g. sigma <- 40  (in your spatial units)
+    # or set manually, e.g. sigma <- 40  (in your spatial units)
   sigma <- sigma %||% bw.diggle(pp)
   
   # 4a. Local transcript *sum* surface (kernel-weighted)
@@ -556,6 +591,9 @@ ImageFeaturePlot.contour <- function(object, feature, fov,
   maxv <- max(df_sum$value, na.rm=TRUE)
   breaks <- seq(thr, maxv, length.out = n_levels + 1)
   
+  plot_xlim <- range(df$x, na.rm = TRUE)
+  plot_ylim <- range(df$y, na.rm = TRUE)
+
   g <- ggplot() + theme_void()
   
   if (plot.all){
@@ -570,7 +608,7 @@ ImageFeaturePlot.contour <- function(object, feature, fov,
   }
   
   g <- g + geom_contour_filled(data = df_sum, aes(x=x, y=y, z = value), alpha = contour.alpha, breaks = breaks)
-  
+
   if (dark.background){
     g <- g + theme(panel.background = element_rect(fill = "black", color = "black"))
     color_palette = color_palette %||% c("#3B0047","#D700FF")
@@ -582,11 +620,68 @@ ImageFeaturePlot.contour <- function(object, feature, fov,
     name = paste0("value ≥ ", signif(thr,3)),
     drop = FALSE)
   
-  g <- g + coord_equal() # coord_fixed()
-  
+  g <- g + coord_fixed(ratio = 1, xlim = plot_xlim, ylim = plot_ylim)
+
+  if (!is.null(scalebar.length)) {
+    if (!is.numeric(scalebar.length) || length(scalebar.length) != 1 || scalebar.length <= 0) {
+      stop("scalebar.length must be a positive numeric value.")
+    }
+
+    span_x <- diff(plot_xlim)
+    span_y <- diff(plot_ylim)
+    margin <- max(scalebar.margin, 0)
+    margin_x <- span_x * margin
+    margin_y <- span_y * margin
+    offset_y <- if (span_y > 0) span_y * 0.02 else span_x * 0.02
+    bar_colour <- if (is.null(scalebar.color)) {
+      if (isTRUE(dark.background)) "white" else "black"
+    } else {
+      scalebar.color
+    }
+
+    if (is.character(scalebar.position)) {
+      pos <- match.arg(scalebar.position, c("bottomright", "bottomleft", "topright", "topleft"))
+      if (scalebar.length > span_x) {
+        warning("scalebar.length exceeds the x-range of the plot and may be clipped.", call. = FALSE)
+      }
+
+      from_left <- grepl("left", pos)
+      from_bottom <- grepl("bottom", pos)
+
+      x_start <- if (from_left) plot_xlim[1] + margin_x else plot_xlim[2] - margin_x - scalebar.length
+      y_start <- if (from_bottom) plot_ylim[1] + margin_y else plot_ylim[2] - margin_y
+      label_y <- if (from_bottom) y_start + offset_y else y_start - offset_y
+      text_vjust <- if (from_bottom) 0 else 1
+    } else if (is.numeric(scalebar.position) && length(scalebar.position) == 2) {
+      x_start <- scalebar.position[1]
+      y_start <- scalebar.position[2]
+      label_y <- y_start + offset_y
+      text_vjust <- 0
+    } else {
+      stop("scalebar.position must be 'bottomright', 'bottomleft', 'topright', 'topleft', or a numeric length-2 vector.")
+    }
+
+    x_end <- x_start + scalebar.length
+    scalebar.label <- round(scalebar.length * scalebar.numConv, digits = 2)
+    label <- if (is.null(scalebar.unit) || scalebar.unit == "") {
+      scalebar.label
+    } else {
+      paste(scalebar.label, scalebar.unit)
+    }
+
+    g <- g +
+      annotate("segment", x = x_start, xend = x_end, y = y_start, yend = y_start, colour = bar_colour, size = 0.5) +
+      annotate("text", x = (x_start + x_end) / 2, y = label_y, label = label, colour = bar_colour, size = scalebar.text.size, vjust = text_vjust)
+  }
+
+  if (flip) {
+    g <- g + coord_flip()
+  }
+
   return(g)
   
 }
+
 
 
 
@@ -607,7 +702,6 @@ getImageSize <- function(object, fov){
   names(res) <- c("width","height")
   return(res)
 }
-
 
 
 
