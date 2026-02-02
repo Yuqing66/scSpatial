@@ -219,3 +219,132 @@ plot.mt.long <- function(df, flip=F){
 
 
 
+
+
+
+#' Rotate coordinate and bounding box data for a spatial component
+#'
+#' Internal helper used by `rotateCoords()` to update centroid or molecule
+#' coordinates and their bounding boxes for 90-degree rotations.
+#'
+#' @param coords Matrix-like object with x/y columns to rotate.
+#' @param bbox Two-row bounding box matrix with rows `x` and `y` and columns
+#'   `min`/`max`.
+#' @param angle Rotation angle in degrees. Must be 90, 180, or 270.
+#'
+#' @return A list containing `coords` (rotated coordinates) and `bbox`
+#'   (updated bounding box).
+#' @noRd
+rotate_component_coords <- function(coords, bbox, angle) {
+  if (is.null(coords) || nrow(coords) == 0) {
+    return(list(coords = coords, bbox = bbox))
+  }
+  x <- coords[, 1]
+  y <- coords[, 2]
+  
+  x0 <- min(x)
+  y0 <- min(y)
+  width <- max(x) - x0
+  height <- max(y) - y0
+  
+  rel_x <- coords[, 1] - x0
+  rel_y <- coords[, 2] - y0
+  
+  rotated <- switch(
+    as.character(angle),
+    "90" = cbind(rel_y + y0, width - rel_x + x0),
+    "180" = cbind(width - rel_x + x0, height - rel_y + y0),
+    "270" = cbind(height - rel_y + y0, rel_x + x0),
+    stop("angle must be 90, 180, or 270.")
+  )
+  colnames(rotated) <- colnames(coords)
+  rownames(rotated) <- rownames(coords)
+  
+  # Update bounding box
+  bbox <- rbind(
+    x = c(min = min(rotated[, 1], na.rm = TRUE), max = max(rotated[, 1], na.rm = TRUE)),
+    y = c(min = min(rotated[, 2], na.rm = TRUE), max = max(rotated[, 2], na.rm = TRUE))
+  )
+  colnames(bbox) <- c("min", "max")
+  rownames(bbox) <- c("x", "y")
+  
+  list(coords = rotated, bbox = bbox)
+}
+
+rotate_spatial_component <- function(component, angle) {
+  if (is.null(component)) {
+    return(component)
+  }
+  rotated <- rotate_component_coords(component@coords, component@bbox, angle)
+  component@coords <- rotated$coords
+  component@bbox <- rotated$bbox
+  component
+}
+
+rotate_molecule_container <- function(container, angle) {
+  if (is.null(container) || length(container$molecules) == 0) {
+    return(container)
+  }
+  
+  container$molecules <- lapply(container$molecules, rotate_spatial_component, angle = angle)
+  container
+}
+
+#' Rotate spatial coordinates stored in a Seurat field of view
+#'
+#' Rotates cell centroids and molecule coordinates for a selected Seurat
+#' imaging field of view (`fov`) by an exact 90-degree increment. Both the
+#' individual coordinate matrices and their bounding boxes are updated so
+#' downstream plotting functions see the rotated geometry.
+#'
+#' @param srt A Seurat object containing the imaging field of view to rotate.
+#' @param fov A single character value naming the entry in `srt@images` to
+#'   rotate (for example `"UV109fov1"`).
+#' @param angle Desired clockwise rotation in degrees. Must be one of
+#'   `0`, `90`, `180`, or `270`.
+#'
+#' @return The input Seurat object with the requested field of view modified
+#'   in-place.
+#'
+#' @examples
+#' seqfish <- rotateCoords(seqfish, "UV109fov1", 90)
+#' 
+#'
+#' @export
+rotateCoords <- function(srt, fov, angle) {
+  angle <- suppressWarnings(as.numeric(angle))
+  if (is.na(angle)) {
+    stop("angle must be numeric.")
+  }
+  angle <- angle %% 360
+  valid_angles <- c(0, 90, 180, 270)
+  if (!angle %in% valid_angles) {
+    stop("angle must be one of 0, 90, 180, or 270 (clockwise).")
+  }
+  if (angle == 0) {
+    return(srt)
+  }
+  
+  if (!fov %in% names(srt@images)) {
+    stop("Requested fov not found in the Seurat object.")
+  }
+  
+  fov_image <- srt@images[[fov]]
+  
+  if (!is.null(fov_image$centroids)) {
+    fov_image[["centroids"]] <- rotate_spatial_component(fov_image$centroids, angle)
+  }
+  
+  if (!is.null(fov_image@boundaries) && !is.null(fov_image@boundaries$centroids)) {
+    fov_image@boundaries[["centroids"]] <- rotate_spatial_component(fov_image@boundaries$centroids, angle)
+  }
+  
+  if (!is.null(fov_image@molecules)) {
+    fov_image@molecules <- rotate_molecule_container(fov_image@molecules, angle)
+  }
+  
+  srt@images[[fov]] <- fov_image
+  srt
+}
+
+
