@@ -30,7 +30,9 @@ createField(
 Simply store the info, for getValueInField function to read.
 }
 \examples{
+\dontrun{
 coords.ifnb1 <- getCoords.transcript(srt, transcript="IFNB1", fov="UV109fov1")
 findDistance.euclidean(0.00001,sd=1000)
 field <- createField(coords.ifnb1, sd=1000, h=NULL, d.cutoff=2715, scale.factor=10000)
+}
 }

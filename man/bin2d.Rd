@@ -31,8 +31,10 @@ bin2d(
 Binning 2d points for count in each bin or calculation with weight assigned to each point.
 }
 \examples{
+\dontrun{
 x <- cellCoords[,1]
 y <- cellCoords[,2]
 binlim <- c(min(x),max(x),min(y),max(y))
 bin2d(x=x, y=y, nbins=c(100,100), binlim=binlim)
+}
 }

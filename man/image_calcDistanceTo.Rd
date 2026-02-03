@@ -22,7 +22,9 @@ A vector of distances.
 Calculate the distance of cells on an image to a defined shape such as a line.
 }
 \examples{
+\dontrun{
 g <- ImageDimPlot.ssc(srt, fov = fov, group.by = NULL)
 coords <- getClickCoordinates(g)
 d <- image_calcDistanceTo(srt, fov = fov, coords.df = coords)
+}
 }

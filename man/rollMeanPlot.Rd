@@ -17,23 +17,27 @@ rollMeanPlot(
 \arguments{
 \item{x, y}{A vector of x and y values.}
 
+\item{group.vec}{Optional. A vector of group values for coloring.}
+
+\item{split.vec}{Optional. A vector of split values for facetting.}
+
 \item{window.prop}{Proportion of data used in the sliding window for smoothing.}
 
 \item{window.n}{Number of points in the sliding window for smoothing. window.prop will be ignored if window.n is provided.}
 
 \item{trans}{Transformation of the x-axis.}
-
-\item{group}{Optional. A vector of group for coloring.}
-
-\item{split}{Optional. A vector of split for facetting.}
 }
 \description{
 Visualize the change of y along a continuous variable x, with moving window for smoothing.
 The underlying function for FeaturePlot.cont.rollmean.
 }
 \examples{
-rollMeanPlot(x=srt.inf$values_CD4_subCellType2,
-             y=srt.inf@assays$seqFISH@layers$data[rownames(srt) == "MMP9", ],
-             group=srt.inf$Sample,
-             trans="log1p")
+\dontrun{
+rollMeanPlot(
+  x = srt.inf$values_CD4_subCellType2,
+  y = srt.inf@assays$seqFISH@layers$data[rownames(srt) == "MMP9", ],
+  group.vec = srt.inf$Sample,
+  trans = "log1p"
+)
+}
 }

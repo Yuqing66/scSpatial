@@ -16,6 +16,8 @@ A data frame with x,y coordinates.
 Display the plot and get the coordinates of clicks.
 }
 \examples{
+\dontrun{
 g <- ImageDimPlot.ssc(srt, fov = fov, group.by = NULL)
 coords <- getClickCoordinates(g)
+}
 }

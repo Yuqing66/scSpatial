@@ -15,8 +15,10 @@ getValueInField(field, coords)
 Calculate the value of the field at each query point.
 }
 \examples{
+\dontrun{
 coords.moDC <- getCoords.cell(srt, ind = srt$subcelltype == "monocyte", fov = "roi1")
 values <- getValueInField(field, coords.moDC)
 plot(sort(values))
 plot(density(values))
+}
 }

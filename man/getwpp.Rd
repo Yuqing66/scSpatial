@@ -15,5 +15,7 @@ getwpp(bins, tab)
 Construct an object of class "wpp" from a wide matrix stored in bins object.
 }
 \examples{
+\dontrun{
 getwpp(bins, tab="counts.smooth")
+}
 }

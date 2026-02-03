@@ -15,6 +15,8 @@ plotMt.long(df, flip = F)
 Plot 2d raster plot with data.frame in long format
 }
 \examples{
+\dontrun{
 colnames(df.long) <- c("x","y","z")
 plotMt.long(df.long)
+}
 }

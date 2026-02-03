@@ -10,11 +10,15 @@ getCoords.cell(object, fov, meta.cols = NULL)
 \item{object}{Seurat object. Need to subset srt before applying this function.}
 
 \item{fov}{The name of the image fov in the Seurat object.}
+
+\item{meta.cols}{Optional columns from meta.data to append.}
 }
 \description{
 Extract the coordinates of cells of an fov.
 Subset the Seurat object for cell types etc before applying this function.
 }
 \examples{
+\dontrun{
 coords <- getCoords.cell(srt[,srt$CellType == "Keratinocyte"], fov = "UV109fov1")
+}
 }

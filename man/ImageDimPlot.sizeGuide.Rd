@@ -67,5 +67,14 @@ Plot circles with different radius on ImageDimPlot.
 Serve as a size guide to choose sd for plotField colocalization analysis.
 }
 \examples{
-ImageDimPlot.sizeGuide(srt, fov = "UV238fov1", group.by = "subCellType.1", gap = 1000, position = "topleft", flip=T)
+\dontrun{
+ImageDimPlot.sizeGuide(
+  srt,
+  fov = "UV238fov1",
+  group.by = "subCellType.1",
+  gap = 1000,
+  position = "topleft",
+  flip = TRUE
+)
+}
 }

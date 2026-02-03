@@ -43,7 +43,9 @@ Plot the gene expression along a continuous variable in meta.data. Smoothed by l
 To check the gene expression pattern according to the colocalization values.
 }
 \examples{
+\dontrun{
 srt.inf <- srt[,srt$subCellType.1 \%in\% c("MC_Inf","MC_Inf2","MC")]
 FeaturePlot.cont.loess(srt.inf, gene = "LYVE1", continuous = "values_CD4_subCellType2",
                        group.by = "Sample", split.by = "Disease", smooth.span = 0.9, trans="log1p")
+}
 }

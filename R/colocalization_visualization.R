@@ -10,13 +10,17 @@
 #' @param binlim x, y range for bin calculation, e.g. c(min(x),max(x),min(y),max(y)).
 #' @param shape "long" by default, but can change to "wide".
 #' @examples
+#' \dontrun{
 #' binlim.srt <- getSize(srt, fov = "UV109fov1")
 #' df.wide <- plotField(field, nbins = 100, binlim = binlim.srt, shape = "wide")
 #' plotMt(z=df.wide)
 #' df.long <- plotField(field, nbins = 100, binlim = binlim.srt, shape = "long")
 #' colnames(df.long) <- c("x","y","z")
 #' plotMt.long(df.long)
-#' @import magrittr tibble dplyr tidyr
+#' }
+#' @import dplyr
+#' @importFrom tidyr pivot_wider
+#' @importFrom tibble column_to_rownames
 #' @export
 #'
 
@@ -55,9 +59,11 @@ plotField <- function(field, nbins, binlim, shape="long"){
 #' @param flip Flip the plot to match seurat plot.
 #' @param method "tile" by default, but can change to "raster".
 #' @examples
+#' \dontrun{
 #' binlim.srt <- getSize(srt, fov = "UV109fov1")
 #' df.wide <- plotField(field, nbins = 100, binlim = binlim.srt, shape = "wide")
 #' plotMt(z=df.wide)
+#' }
 #' @import ggplot2 reshape2
 #' @export
 #'
@@ -100,8 +106,10 @@ plotMt <- function(x=NULL,y=NULL,z,flip=F,method="tile"){
 #' @param df A data.frame with columns x, y, z for coordinates x,y and value z.
 #' @param flip Flip the plot to match seurat plot.
 #' @examples
+#' \dontrun{
 #' colnames(df.long) <- c("x","y","z")
 #' plotMt.long(df.long)
+#' }
 #' @import ggplot2
 #' @export
 #'
@@ -131,9 +139,11 @@ plotMt.long <- function(df, flip=F){
 #' @param flip Flip the plot to match seurat plot.
 #' @param shape "long" by default, but can change to "wide".
 #' @examples
+#' \dontrun{
 #' g <- plotContour(df.long, shape = "long")
 #' htmlwidgets::saveWidget(rglwidget(), "field_IFNB1_nbins100_contour.html")
 #' browseURL("field_IFNB1_nbins100_contour.html")
+#' }
 #' @import rgl
 #' @export
 #'
@@ -166,14 +176,21 @@ plotContour <- function(df, flip=T, shape="long"){
 #' @param values A vector of values for coloring.
 #' @param alpha Transparency of the points.
 #' @param size Size of the points.
-#' @param flip Flip the plot to match seurat plot.
-#' @param color Color of the points.
-#' @param object Seurat object.
+#' @param flip Flip the plot to match Seurat plot.
+#' @param color Color palette for the value gradient.
+#' @param srt Optional Seurat object used to draw background cell locations.
+#' @param fov Image name to use when `srt` is provided.
+#' @param alpha.srt Transparency of background cells.
+#' @param size.srt Size of background cells.
+#' @param color.srt Color of background cells.
+#' @param dark.background Logical; if TRUE, use a dark background.
 #' @examples
+#' \dontrun{
 #' ind.moDC <- srt$subcelltype == "monocyte"
 #' coords.moDC <- getCoords.cell(srt, ind = ind.moDC, fov = "roi1")
 #' values <- getValueInField(field, coords.moDC)
 #' ImageDimPlot.values(coords=coords.moDC, values, fov="roi1", srt=srt)
+#' }
 #' @import Seurat
 #' @export
 #'
@@ -241,12 +258,19 @@ ImageDimPlot.values <- function(coords=NULL, values, alpha = 1, size = 0.8, flip
 #' @param dark.background Black background. By default TRUE.
 #' @param flip Flip coordinates to match the Seurat output. By default FALSE.
 #' @examples
-#' ImageDimPlot.sizeGuide(srt, fov = "UV238fov1", group.by = "subCellType.1", gap = 1000, position = "topleft", flip=T)
-#' @import Seurat ggforce
+#' \dontrun{
+#' ImageDimPlot.sizeGuide(
+#'   srt,
+#'   fov = "UV238fov1",
+#'   group.by = "subCellType.1",
+#'   gap = 1000,
+#'   position = "topleft",
+#'   flip = TRUE
+#' )
+#' }
+#' @import Seurat
+#' @importFrom ggforce geom_circle
 #' @export
-
-library(ggforce)
-
 ImageDimPlot.sizeGuide <- function(object, fov, group.by=NULL, size = 0.2, cols = NULL, alpha = 1,
                        radii = c(100,200,300,400,500,700,1000), gap = NULL,
                        position = "bottomleft", direction = "v",
@@ -340,9 +364,11 @@ ImageDimPlot.sizeGuide <- function(object, fov, group.by=NULL, size = 0.2, cols 
 #' @param smooth.se Display standard error of the regression. By default FALSE.
 #' @param trans Transformation of the x-axis. By default "log1p".
 #' @examples
+#' \dontrun{
 #' srt.inf <- srt[,srt$subCellType.1 %in% c("MC_Inf","MC_Inf2","MC")]
 #' FeaturePlot.cont.loess(srt.inf, gene = "LYVE1", continuous = "values_CD4_subCellType2",
 #'                        group.by = "Sample", split.by = "Disease", smooth.span = 0.9, trans="log1p")
+#' }
 #' @import ggplot2 Seurat
 #' @export
 
@@ -399,9 +425,18 @@ FeaturePlot.cont.loess <- function(object, gene, continuous, group.by=NULL, spli
 #' @param window.n Number of points in the sliding window for smoothing.
 #' @param trans Transformation of the x-axis. By default "log1p".
 #' @examples
+#' \dontrun{
 #' srt.inf <- srt[,srt$subCellType.1 %in% c("MC_Inf","MC_Inf2","MC")]
-#' FeaturePlot.cont.rollmean(srt.inf, gene = "MMP9", continuous = "values_CD4_subCellType2",
-#'                           group.by = "Sample", split.by = "Disease", window.prop = 0.05, trans="log1p")
+#' FeaturePlot.cont.rollmean(
+#'   srt.inf,
+#'   gene = "MMP9",
+#'   continuous = "values_CD4_subCellType2",
+#'   group.by = "Sample",
+#'   split.by = "Disease",
+#'   window.prop = 0.05,
+#'   trans = "log1p"
+#' )
+#' }
 #' @import ggplot2 Seurat zoo
 #' @export
 
@@ -439,17 +474,21 @@ FeaturePlot.cont.rollmean <- function(object, gene, continuous, group.by=NULL, s
 #' Visualize the change of y along a continuous variable x, with moving window for smoothing.
 #' The underlying function for FeaturePlot.cont.rollmean.
 #' @param x,y A vector of x and y values.
-#' @param group Optional. A vector of group for coloring.
-#' @param split Optional. A vector of split for facetting.
+#' @param group.vec Optional. A vector of group values for coloring.
+#' @param split.vec Optional. A vector of split values for facetting.
 #' @param window.prop Proportion of data used in the sliding window for smoothing.
 #' @param window.n Number of points in the sliding window for smoothing. window.prop will be ignored if window.n is provided.
 #' @param trans Transformation of the x-axis.
 #' @examples
-#' rollMeanPlot(x=srt.inf$values_CD4_subCellType2,
-#'              y=srt.inf@assays$seqFISH@layers$data[rownames(srt) == "MMP9", ],
-#'              group=srt.inf$Sample,
-#'              trans="log1p")
-#' @import ggplot2 zoo magrittr dplyr
+#' \dontrun{
+#' rollMeanPlot(
+#'   x = srt.inf$values_CD4_subCellType2,
+#'   y = srt.inf@assays$seqFISH@layers$data[rownames(srt) == "MMP9", ],
+#'   group.vec = srt.inf$Sample,
+#'   trans = "log1p"
+#' )
+#' }
+#' @import ggplot2 zoo
 #' @export
 
 rollMeanPlot <- function(x, y, group.vec=NULL, split.vec=NULL, window.prop=0.05, window.n=NULL, trans=NULL){
@@ -466,7 +505,7 @@ rollMeanPlot <- function(x, y, group.vec=NULL, split.vec=NULL, window.prop=0.05,
       df$rollingavg[ind] <- rollMean(df$x[ind], df$y[ind], window.prop=window.prop, window.n=window.n)
     }
   }else{
-    df$rollingavg <- rollMean(df$x[ind], df$y[ind], window.prop=window.prop, window.n=window.n)
+    df$rollingavg <- rollMean(df$x, df$y, window.prop=window.prop, window.n=window.n)
   }
 
   g <- ggplot(df) +
@@ -514,5 +553,3 @@ rollMean <- function(x, y, window.prop=0.05, window.n=NULL){
   rollingavg <- rollingavg[order(ind)]
   return(rollingavg)
 }
-
-

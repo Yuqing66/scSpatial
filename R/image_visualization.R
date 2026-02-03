@@ -36,13 +36,43 @@
 #' @param scalebar.margin Margin as a fraction of the plot span when positioning the scale bar.
 #' @return A ggplot object.
 #' @examples
+#' \dontrun{
 #' ImageDimPlot.ssc(srt, fov = "UV109fov1", group.by = "celltype_res0.1")
-#' ImageDimPlot.ssc(srt, fov = "UV109fov1", group.by = "celltype_res0.1", split.by = "Disease")
-#' ImageDimPlot.ssc(srt, fov = "UV109fov1", group.by = "celltype_res0.1", highlight.groups = c("Lymphocyte","KC_glandular_eccrine"))
+#' ImageDimPlot.ssc(
+#'   srt,
+#'   fov = "UV109fov1",
+#'   group.by = "celltype_res0.1",
+#'   split.by = "Disease"
+#' )
+#' ImageDimPlot.ssc(
+#'   srt,
+#'   fov = "UV109fov1",
+#'   group.by = "celltype_res0.1",
+#'   highlight.groups = c("Lymphocyte", "KC_glandular_eccrine")
+#' )
 #' srt$lowCount <- ifelse(srt$nCount_seqFISH < 100, "low", "high")
-#' ImageDimPlot.ssc(srt, fov = "UV109fov1", group.by = "celltype_res0.1", highlight.by = "lowCount", highlight.groups = "low", highlight.size = 0.5)
-#' ImageDimPlot.ssc(srt, fov = "UV109fov1", group.by = "celltype_res0.1", molecules = c("IFNB1","IL17A"), molecules.size = 0.7)
-#' ImageDimPlot.ssc(srt, fov = "UV109fov1", group.by = "celltype_res0.1", crop = T)
+#' ImageDimPlot.ssc(
+#'   srt,
+#'   fov = "UV109fov1",
+#'   group.by = "celltype_res0.1",
+#'   highlight.by = "lowCount",
+#'   highlight.groups = "low",
+#'   highlight.size = 0.5
+#' )
+#' ImageDimPlot.ssc(
+#'   srt,
+#'   fov = "UV109fov1",
+#'   group.by = "celltype_res0.1",
+#'   molecules = c("IFNB1", "IL17A"),
+#'   molecules.size = 0.7
+#' )
+#' ImageDimPlot.ssc(
+#'   srt,
+#'   fov = "UV109fov1",
+#'   group.by = "celltype_res0.1",
+#'   crop = TRUE
+#' )
+#' }
 #' @seealso Seurat::ImageDimPlot
 #' @import ggplot2 dplyr Seurat
 #' @export
@@ -253,7 +283,7 @@ ImageDimPlot.ssc <- function (object, fov, group.by = NULL, split.by = NULL, siz
 #' Transition animation between plots of cells
 #'
 #' @description Create a transition animation between different cell coordinate plots, e.g. fov, umap, pca
-#' @param object Seurat object.
+#' @param srt Seurat object.
 #' @param initial Name of cell coordinates to start with. Embedding name in srt@reductions, or "images" for spatial slide.
 #' @param final Name of cell coordinates to transition into.
 #' @param group.by The name of metadata column to color by.
@@ -266,12 +296,32 @@ ImageDimPlot.ssc <- function (object, fov, group.by = NULL, split.by = NULL, siz
 #' @param match.scale.by Scale the initial and final coordinates. NULL, x, y, or both.
 #' @param plot.legend Logical. If TRUE, plot the legend. By default FALSE.
 #' @param plot.boundaryFrames Logical. If TRUE, plot the boundary frames, and use list as the output. By default TRUE.
+#' @param cols Optional named vector of colors for `group.by`.
 #' @examples
-#' g <- plotTransition(srt, initial="umap", final="images", group.by="subcelltype", fov=NULL, point.size = 0.3, match.scale.by = "y")
-#' animate(g, duration = 7, fps = 10, start_pause = 10, end_pause = 10,
-#'         width = 16, height = 8, units = "in", res = 150,
-#'         renderer = gifski_renderer())
+#' \dontrun{
+#' g <- plotTransition(
+#'   srt,
+#'   initial = "umap",
+#'   final = "images",
+#'   group.by = "subcelltype",
+#'   fov = NULL,
+#'   point.size = 0.3,
+#'   match.scale.by = "y"
+#' )
+#' animate(
+#'   g,
+#'   duration = 7,
+#'   fps = 10,
+#'   start_pause = 10,
+#'   end_pause = 10,
+#'   width = 16,
+#'   height = 8,
+#'   units = "in",
+#'   res = 150,
+#'   renderer = gifski_renderer()
+#' )
 #' anim_save("transition_animation_umap_to_images.gif")
+#' }
 #' @import ggplot2 dplyr gganimate
 #' @export
 
@@ -431,7 +481,7 @@ plotTransition <- function(srt, initial="umap", final="images", group.by=NULL,
 #'
 #' @description
 #' Use the same parameters as in the plotTransition that generated the animation.
-#' @param object Seurat object.
+#' @param srt Seurat object.
 #' @param initial Name of cell coordinates to start with. Embedding name in srt@reductions, or "images" for spatial slide.
 #' @param final Name of cell coordinates to transition into.
 #' @param group.by The name of metadata column to color by.
@@ -443,11 +493,29 @@ plotTransition <- function(srt, initial="umap", final="images", group.by=NULL,
 #' @param image.coord.flip To match the Seurat output, the x and y axises are by default flipped.
 #' @param match.scale.by Scale the initial and final coordinates. NULL, x, y, or both.
 #' @examples
-#' g.list <- plotTransition.terminal(srt, initial="umap", final="images", group.by="subcelltype", fov=NULL, point.size = 0.3, match.scale.by = "y")
+#' \dontrun{
+#' g.list <- plotTransition.terminal(
+#'   srt,
+#'   initial = "umap",
+#'   final = "images",
+#'   group.by = "subcelltype",
+#'   fov = NULL,
+#'   point.size = 0.3,
+#'   match.scale.by = "y"
+#' )
 #' g.list[[1]]
-#' ggsave(paste0("transition_animation_umap_to_images_start.png"), width = 16, height = 8)
+#' ggsave(
+#'   "transition_animation_umap_to_images_start.png",
+#'   width = 16,
+#'   height = 8
+#' )
 #' g.list[[2]]
-#' ggsave(paste0("transition_animation_umap_to_images_end.png"), width = 16, height = 8)
+#' ggsave(
+#'   "transition_animation_umap_to_images_end.png",
+#'   width = 16,
+#'   height = 8
+#' )
+#' }
 #' @import ggplot2 dplyr gganimate
 #' @export
 
@@ -583,9 +651,11 @@ plotTransition.terminal <- function(srt, initial="umap", final="images", group.b
 #' @param path.alpha Transparency of the path.
 #' @return A ggplot object with the path added.
 #' @examples
+#' \dontrun{
 #' g <- ImageDimPlot.ssc(srt, fov = fov, group.by = NULL)
 #' coords <- getClickCoordinates(g)
 #' ImageDimPlot.path(g, path.coords = coords)
+#' }
 #' @import ggplot2
 #' @export
 
@@ -641,11 +711,12 @@ ImageDimPlot.path <- function(ggplot.object, path.coords, ends.close = F,
 #' @param scalebar.margin Fractional margin from plot edges for automatic positions.
 #' @return A ggplot object.
 #' @importFrom spatstat.geom owin ppp
-#' @importFrom spatstat.explore density bw.diggle
+#' @importFrom spatstat.explore density.ppp bw.diggle
 #' @importFrom grDevices colorRampPalette
 #' @examples
+#' \dontrun{
 #' g <- ImageFeaturePlot.contour(seqfish, feature = "IFNB1", fov = "HS009fov1")
-#' 
+#' }
 ImageFeaturePlot.contour <- function(object, feature, fov, 
                                      plot.all = T, group.by = NULL, size = 0.1, cols = NULL, alpha = 0.5,
                                      sigma = NULL, n_levels = 6, color_palette = NULL, threshold = 0.9, contour.alpha = 0.7,
@@ -671,7 +742,7 @@ ImageFeaturePlot.contour <- function(object, feature, fov,
   sigma <- sigma %||% bw.diggle(pp)
   
   # 4a. Local transcript *sum* surface (kernel-weighted)
-  sum_surface <- density(pp, weights = pp$marks, sigma = sigma, at = "pixels", edge=TRUE)
+  sum_surface <- density.ppp(pp, weights = pp$marks, sigma = sigma, at = "pixels", edge = TRUE)
   # units: (sum of expression) / area
   
   df_sum  <- as.data.frame(sum_surface)  # columns: x, y, value
@@ -707,7 +778,7 @@ ImageFeaturePlot.contour <- function(object, feature, fov,
   }
   g <- g + scale_fill_manual(
     values = colorRampPalette(color_palette)(length(breaks) - 1),
-    name = paste0("value ≥ ", signif(thr,3)),
+    name = paste0("value >= ", signif(thr,3)),
     drop = FALSE)
   
   g <- g + coord_fixed(ratio = 1, xlim = plot_xlim, ylim = plot_ylim)
@@ -784,7 +855,7 @@ ImageFeaturePlot.contour <- function(object, feature, fov,
 
 
 getImageSize <- function(object, fov){
-  mat <- srt@images[[fov]]@boundaries$centroids@bbox
+  mat <- object@images[[fov]]@boundaries$centroids@bbox
   w <- mat[1,2] - mat[1,1]
   h <- mat[2,2] - mat[2,1]
   

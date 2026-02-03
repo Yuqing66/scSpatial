@@ -17,5 +17,7 @@ getCoords.transcript(object, transcript, fov)
 Extract the coordinates of transcripts in a fov.
 }
 \examples{
+\dontrun{
 coords <- getCoords.transcript(srt, transcript="IFNB1", fov="UV109fov1")
+}
 }

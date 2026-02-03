@@ -17,9 +17,12 @@
 #'   the `seurat_clusters` assignments produced for that run.
 #'
 #' @examples
-#' seed_clusters <- FindClusters.AcrossSeeds(srt, seeds = 0:1, resolution = 0.5)
+#' \dontrun{
+#' seed_clusters <- FindClustersAcrossSeeds(srt, seeds = 0:1, resolution = 0.5)
 #' head(seed_clusters)
-FindClusters.AcrossSeeds <- function(srt, seeds = 0:100, resolution = 0.8, ...){
+#' }
+#' @export
+FindClustersAcrossSeeds <- function(srt, seeds = 0:100, resolution = 0.8, ...){
   df.seeds <- data.frame(row.names = colnames(srt))
   for (i in seq_along(seeds)){
     seed <- seeds[[i]]
@@ -45,6 +48,7 @@ FindClusters.AcrossSeeds <- function(srt, seeds = 0:100, resolution = 0.8, ...){
 #'
 #' @examples
 #' BelongPlot(c(1, 1, 2, 2), c(1, 2, 2, 3))
+#' @export
 BelongPlot <- function(group1, group2, name.1=NULL, name.2=NULL){
   df <- data.frame(x = factor(group1), y = factor(group2))
   df <- df %>%
@@ -82,6 +86,7 @@ BelongPlot <- function(group1, group2, name.1=NULL, name.2=NULL){
 #'
 #' @examples
 #' consistency(c(1, 1, 2, 2), c(1, 2, 2, 3))
+#' @export
 consistency <- function(group1, group2){
   df <- data.frame(x = factor(group1), y = factor(group2))
   df2 <- df %>%
@@ -121,6 +126,7 @@ consistency <- function(group1, group2){
 #' @examples
 #' df <- data.frame(seed0 = c(1, 1, 2, 2), seed1 = c(1, 2, 2, 3))
 #' calcSeedConsistency(df, reference_seed = "seed0", return_long = TRUE)
+#' @export
 calcSeedConsistency <- function(df.seeds, reference_seed,
                                 compare_seeds = NULL, return_long = FALSE){
   if (is.null(compare_seeds)) compare_seeds <- setdiff(colnames(df.seeds), reference_seed)
@@ -163,7 +169,9 @@ calcSeedConsistency <- function(df.seeds, reference_seed,
 #'   distributions.
 #'
 #' @examples
+#' df <- data.frame(cluster = c("1", "1", "2", "2"), score = c(0.8, 0.9, 0.3, 0.5))
 #' plotConsistencyRidges(df)
+#' @export
 plotConsistencyRidges <- function(df, cluster_col = "cluster",
                                   score_col = "score", xlim = NULL,
                                   bins = 70, alpha = 0.5, fill_palette = NULL){
@@ -203,6 +211,7 @@ plotConsistencyRidges <- function(df, cluster_col = "cluster",
 #'
 #' @examples
 #' calcProp(c(1, 1, 2, 2), c(1, 2, 2, 3))
+#' @export
 calcProp <- function(group1,group2){
   df <- data.frame(x = factor(group1), y = factor(group2))
   df2 <- df %>%
@@ -236,6 +245,7 @@ calcProp <- function(group1,group2){
 #' @examples
 #' df <- data.frame(seed0 = c(1, 1, 2, 2), seed1 = c(1, 2, 2, 3))
 #' calcCellScore(df, i.seed1 = "seed0")
+#' @export
 calcCellScore <- function(df.seeds, i.seed1, i.seed2s=NULL){
   if(is.null(i.seed2s)) i.seed2s <- setdiff(colnames(df.seeds), i.seed1)
   
@@ -255,59 +265,58 @@ calcCellScore <- function(df.seeds, i.seed1, i.seed2s=NULL){
 
 ###### Clustering robustness tutorial ######
 
+if (FALSE) {
+  # Step 0: Define parameters and create output directories
+  seed_resolution <- 0.8
+  seed_range <- 0:100
+  output_root <- "robustness"
+  heatmap_dir <- file.path(output_root, "proportionHeatmap")
+  dir.create(heatmap_dir, recursive = TRUE, showWarnings = FALSE)
 
+  # Optional: recompute neighbours before clustering
+  # srt <- FindNeighbors(srt, dims = 1:30, reduction = "integrated.rpca")
 
-# Step 0: Define parameters and create output directories
-seed_resolution <- 0.8
-seed_range <- 0:100
-output_root <- "robustness"
-heatmap_dir <- file.path(output_root, "proportionHeatmap")
-dir.create(heatmap_dir, recursive = TRUE, showWarnings = FALSE)
+  # Step 1: Run clustering across multiple random seeds
+  seed_clusters <- FindClustersAcrossSeeds(srt, seeds = seed_range, resolution = seed_resolution)
+  write.table(seed_clusters, file = "seuratclusters_pc30_res80_seed0to100.txt")
 
-# Optional: recompute neighbours before clustering
-# srt <- FindNeighbors(srt, dims = 1:30, reduction = "integrated.rpca")
+  # Step 2: Inspect an example pair of seeds
+  example_seed1 <- "seed0"
+  example_seed2 <- "seed1"
+  example_plot <- BelongPlot(seed_clusters[, example_seed1], seed_clusters[, example_seed2],
+                             name.1 = example_seed1, name.2 = example_seed2) +
+    scale_fill_gradientn(colours = c("grey", "blue", "red", "yellow"))
+  print(example_plot)
 
-# Step 1: Run clustering across multiple random seeds
-seed_clusters <- FindClusters.AcrossSeeds(srt, seeds = seed_range, resolution = seed_resolution)
-write.table(seed_clusters, file = "seuratclusters_pc30_res80_seed0to100.txt")
+  # Step 3: Summarise consistency across seeds relative to the reference
+  reference_seed <- "seed0"
+  consistency_summary <- calcSeedConsistency(seed_clusters, reference_seed = reference_seed,
+                                             return_long = TRUE)
+  seed_consistency_matrix <- consistency_summary$scores
+  consistency_long <- consistency_summary$long
 
-# Step 2: Inspect an example pair of seeds
-example_seed1 <- "seed0"
-example_seed2 <- "seed1"
-example_plot <- BelongPlot(seed_clusters[, example_seed1], seed_clusters[, example_seed2],
-                           name.1 = example_seed1, name.2 = example_seed2) +
-  scale_fill_gradientn(colours = c("grey", "blue", "red", "yellow"))
-print(example_plot)
+  # Step 4: Visualise per-cluster stability
+  consistency_plot <- plotConsistencyRidges(consistency_long, xlim = c(0, 1))
+  print(consistency_plot)
+  ggsave("robustness/hist_score_seed0_vs_1to100.png", plot = consistency_plot,
+         width = 5, height = 8)
 
-# Step 3: Summarise consistency across seeds relative to the reference
-reference_seed <- "seed0"
-consistency_summary <- calcSeedConsistency(seed_clusters, reference_seed = reference_seed,
-                                           return_long = TRUE)
-seed_consistency_matrix <- consistency_summary$scores
-consistency_long <- consistency_summary$long
+  # Step 5: Highlight unstable cells on embeddings
+  srt$cellscore <- calcCellScore(seed_clusters, i.seed1 = reference_seed, i.seed2s = NULL)
+  cellscore_plot <- FeaturePlot(srt, "cellscore") +
+    scale_color_gradientn(colours = c("yellow", "red", "blue", "grey"))
+  print(cellscore_plot)
+  ggsave("robustness/cellscore_seed0_vs_1to100.png", plot = cellscore_plot,
+         width = 7, height = 6)
 
-# Step 4: Visualise per-cluster stability
-consistency_plot <- plotConsistencyRidges(consistency_long, xlim = c(0, 1))
-print(consistency_plot)
-ggsave("robustness/hist_score_seed0_vs_1to100.png", plot = consistency_plot,
-       width = 5, height = 8)
+  cellscore_faceted <- FeaturePlot(srt, "cellscore", split.by = "seurat_clusters",
+                                   ncol = 4, cols = c("yellow", "red", "blue", "grey"))
+  ggsave("robustness/cellscore_seed0_vs_1to100_split.png", plot = cellscore_faceted,
+         width = 73, height = 6, limitsize = FALSE)
 
-# Step 5: Highlight unstable cells on embeddings
-srt$cellscore <- calcCellScore(seed_clusters, i.seed1 = reference_seed, i.seed2s = NULL)
-cellscore_plot <- FeaturePlot(srt, "cellscore") +
-  scale_color_gradientn(colours = c("yellow", "red", "blue", "grey"))
-print(cellscore_plot)
-ggsave("robustness/cellscore_seed0_vs_1to100.png", plot = cellscore_plot,
-       width = 7, height = 6)
-
-cellscore_faceted <- FeaturePlot(srt, "cellscore", split.by = "seurat_clusters",
-                                 ncol = 4, cols = c("yellow", "red", "blue", "grey"))
-ggsave("robustness/cellscore_seed0_vs_1to100_split.png", plot = cellscore_faceted,
-       width = 73, height = 6, limitsize = FALSE)
-
-# Optional: Save a reference faceted cluster map
-cluster_reference_plot <- DimPlot.grey(srt, group.by = "seurat_clusters",
-                                       split.by = "seurat_clusters")
-ggsave("robustness/seuratclusters_dim50_res80_seed0_split.png",
-       plot = cluster_reference_plot, width = 17, height = 12)
-
+  # Optional: Save a reference faceted cluster map
+  cluster_reference_plot <- DimPlot.grey(srt, group.by = "seurat_clusters",
+                                         split.by = "seurat_clusters")
+  ggsave("robustness/seuratclusters_dim50_res80_seed0_split.png",
+         plot = cluster_reference_plot, width = 17, height = 12)
+}

@@ -3,13 +3,15 @@
 #' @description
 #' Extract cell coordinates by name of reduction, or fov name of the slide image.
 #'
-#' @param object Seurat object.
-#' @param name Reduction name as in names(srt@reductions), or "image" to extract image coordinates.
+#' @param srt Seurat object.
+#' @param name Reduction name as in names(srt@reductions), or "images" to extract image coordinates.
 #' @param fov A vector of fovs to extract.
-#' @param metadate Columns in meta.data to export together with cell coordinates.
+#' @param metadata Columns in meta.data to export together with cell coordinates.
 #' @examples
+#' \dontrun{
 #' coords <- getCoords(srt, name = "umap", fov=NULL, metadata=c("CellType"))
 #' coords <- getCoords(srt, name = "images", fov=c("fov1","fov2"), metadata=c("CellType"))
+#' }
 #' @export
 
 #
@@ -93,8 +95,11 @@ addOptionalCols <- function(df, ...){
 #'
 #' @param object Seurat object. Need to subset srt before applying this function.
 #' @param fov The name of the image fov in the Seurat object.
+#' @param meta.cols Optional columns from meta.data to append.
 #' @examples
+#' \dontrun{
 #' coords <- getCoords.cell(srt[,srt$CellType == "Keratinocyte"], fov = "UV109fov1")
+#' }
 #' @import Seurat
 #' @export
 #'
@@ -122,7 +127,9 @@ getCoords.cell <- function(object, fov, meta.cols=NULL){
 #' @param transcript The name of the transcript.
 #' @param fov The name of the image fov in the Seurat object.
 #' @examples
+#' \dontrun{
 #' coords <- getCoords.transcript(srt, transcript="IFNB1", fov="UV109fov1")
+#' }
 #' @import Seurat
 #' @export
 #'
@@ -145,14 +152,16 @@ getCoords.transcript <- function(object, transcript, fov){
 #' @param assay The name of the assay.
 #' @param slot The slot of the assay.
 #' @examples
+#' \dontrun{
 #' coords <- getCoords.feature(srt, feature="IFNB1", fov="UV109fov1", assay="seqFISH", slot="data")
+#' }
 #' @import Seurat
 #' @export
 #'
 
 getCoords.feature <- function(object, feature, fov, assay=NULL, slot="data"){
   if (is.null(assay)){
-    assay <- srt@active.assay
+    assay <- object@active.assay
   }
   img <- object@images[[fov]]
   coords <- as.data.frame(img@boundaries$centroids@coords)
@@ -173,8 +182,10 @@ getCoords.feature <- function(object, feature, fov, assay=NULL, slot="data"){
 
 # plot 2d raster density plot
 # x, y are vectors for coordinates of z; z is a count matrix
-library(reshape2)
-plot.mt <- function(x=NULL,y=NULL,z,flip=F){
+#' @keywords internal
+#' @noRd
+#' @exportS3Method plot mt
+plot.mt <- function(x=NULL,y=NULL,z,flip=F, ...){
   wide <- data.frame(z)
   if (is.null(x)) x <- 1:ncol(z)
   if (is.null(y)) y <- 1:nrow(z)
@@ -302,8 +313,9 @@ rotate_spatial_component <- function(component, another.bbox = NULL, angle) {
 #'   in-place.
 #'
 #' @examples
+#' \dontrun{
 #' seqfish <- rotateCoords(seqfish, "UV109fov1", 90)
-#' 
+#' }
 #'
 #' @export
 rotateCoords <- function(srt, fov, angle) {

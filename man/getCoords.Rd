@@ -7,18 +7,20 @@
 getCoords(srt, name, fov = NULL, metadata = NULL)
 }
 \arguments{
-\item{name}{Reduction name as in names(srt@reductions), or "image" to extract image coordinates.}
+\item{srt}{Seurat object.}
+
+\item{name}{Reduction name as in names(srt@reductions), or "images" to extract image coordinates.}
 
 \item{fov}{A vector of fovs to extract.}
 
-\item{object}{Seurat object.}
-
-\item{metadate}{Columns in meta.data to export together with cell coordinates.}
+\item{metadata}{Columns in meta.data to export together with cell coordinates.}
 }
 \description{
 Extract cell coordinates by name of reduction, or fov name of the slide image.
 }
 \examples{
+\dontrun{
 coords <- getCoords(srt, name = "umap", fov=NULL, metadata=c("CellType"))
 coords <- getCoords(srt, name = "images", fov=c("fov1","fov2"), metadata=c("CellType"))
+}
 }

@@ -21,7 +21,9 @@ macOS Preview will do some interpolation of the raster to make the plot in pdf s
 Raster might have some white line/gap in between.
 }
 \examples{
+\dontrun{
 binlim.srt <- getSize(srt, fov = "UV109fov1")
 df.wide <- plotField(field, nbins = 100, binlim = binlim.srt, shape = "wide")
 plotMt(z=df.wide)
+}
 }

@@ -21,5 +21,7 @@ getCoords.feature(object, feature, fov, assay = NULL, slot = "data")
 Get the coordinates of cells in an image fov together with the expression value of a gene.
 }
 \examples{
+\dontrun{
 coords <- getCoords.feature(srt, feature="IFNB1", fov="UV109fov1", assay="seqFISH", slot="data")
+}
 }

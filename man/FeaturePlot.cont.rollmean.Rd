@@ -43,7 +43,16 @@ Plot the gene expression along a continuous variable in meta.data. Smoothed by r
 To check the gene expression pattern according to the colocalization values.
 }
 \examples{
+\dontrun{
 srt.inf <- srt[,srt$subCellType.1 \%in\% c("MC_Inf","MC_Inf2","MC")]
-FeaturePlot.cont.rollmean(srt.inf, gene = "MMP9", continuous = "values_CD4_subCellType2",
-                          group.by = "Sample", split.by = "Disease", window.prop = 0.05, trans="log1p")
+FeaturePlot.cont.rollmean(
+  srt.inf,
+  gene = "MMP9",
+  continuous = "values_CD4_subCellType2",
+  group.by = "Sample",
+  split.by = "Disease",
+  window.prop = 0.05,
+  trans = "log1p"
+)
+}
 }

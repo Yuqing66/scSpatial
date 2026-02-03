@@ -5,10 +5,20 @@
 #'
 #' @param object Seurat object.
 #' @param groups a vector of column names in the metadata.
+#' @param width.node Width of Sankey nodes.
+#' @param size.text Font size for node labels.
+#' @param height Height of the output widget.
+#' @param width Width of the output widget.
+#' @param save Logical; if TRUE, save the widget as HTML and PDF.
+#' @param filename Optional filename for the saved widget.
 #' @examples
+#' \dontrun{
 #' groups <- c("CellType.3","CellType.2","CellType.1","subCellType.2","subCellType.1")
 #' p <- SankeyPlot(srt, groups)
-#' @import networkD3 dplyr webshot
+#' }
+#' @import dplyr
+#' @importFrom networkD3 sankeyNetwork saveNetwork
+#' @importFrom webshot webshot
 #' @export
 #'
 #'
@@ -86,8 +96,6 @@ SankeyPlot <- function(object, groups, width.node = 20, size.text = 12, height =
   
   return(sankey_diagram)
 }
-
-
 
 
 

@@ -33,7 +33,9 @@ A ggplot object with the path added.
 Plot the path on top of a image plot.
 }
 \examples{
+\dontrun{
 g <- ImageDimPlot.ssc(srt, fov = fov, group.by = NULL)
 coords <- getClickCoordinates(g)
 ImageDimPlot.path(g, path.coords = coords)
+}
 }

@@ -17,7 +17,9 @@ plotContour(df, flip = T, shape = "long")
 Plot the 3d contour plot.
 }
 \examples{
+\dontrun{
 g <- plotContour(df.long, shape = "long")
 htmlwidgets::saveWidget(rglwidget(), "field_IFNB1_nbins100_contour.html")
 browseURL("field_IFNB1_nbins100_contour.html")
+}
 }

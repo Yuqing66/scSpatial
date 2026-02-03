@@ -5,7 +5,7 @@
 \title{ImageDimPlot color by provided values.}
 \usage{
 ImageDimPlot.values(
-  coords,
+  coords = NULL,
   values,
   alpha = 1,
   size = 0.8,
@@ -20,7 +20,7 @@ ImageDimPlot.values(
 )
 }
 \arguments{
-\item{coords}{A data.frame with columns x, y.}
+\item{coords}{A data.frame with columns x, y. If not provided, get coordinates from Seurat object based on names of values.}
 
 \item{values}{A vector of values for coloring.}
 
@@ -28,18 +28,30 @@ ImageDimPlot.values(
 
 \item{size}{Size of the points.}
 
-\item{flip}{Flip the plot to match seurat plot.}
+\item{flip}{Flip the plot to match Seurat plot.}
 
-\item{color}{Color of the points.}
+\item{color}{Color palette for the value gradient.}
 
-\item{object}{Seurat object.}
+\item{srt}{Optional Seurat object used to draw background cell locations.}
+
+\item{fov}{Image name to use when `srt` is provided.}
+
+\item{alpha.srt}{Transparency of background cells.}
+
+\item{size.srt}{Size of background cells.}
+
+\item{color.srt}{Color of background cells.}
+
+\item{dark.background}{Logical; if TRUE, use a dark background.}
 }
 \description{
 Plot points on a 2d space color by values. If Seurat object is provided, plot the location of the cells beneath.
 }
 \examples{
+\dontrun{
 ind.moDC <- srt$subcelltype == "monocyte"
 coords.moDC <- getCoords.cell(srt, ind = ind.moDC, fov = "roi1")
 values <- getValueInField(field, coords.moDC)
 ImageDimPlot.values(coords=coords.moDC, values, fov="roi1", srt=srt)
+}
 }

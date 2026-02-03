@@ -37,9 +37,9 @@ ImageDimPlot.ssc(
 \arguments{
 \item{object}{Seurat object with spatial images and centroids.}
 
-\item{fov}{Name of the field of view to plot (must exist in \code{object@images}).}
+\item{fov}{Name of the field of view to plot (must exist in `object@images`).}
 
-\item{group.by}{Metadata column used to color cells. Defaults to \code{ident}.}
+\item{group.by}{Metadata column used to color cells. Defaults to `ident`.}
 
 \item{split.by}{Metadata column used to facet the plot.}
 
@@ -49,7 +49,8 @@ ImageDimPlot.ssc(
 
 \item{alpha}{Transparency of the cells.}
 
-\item{highlight.by}{Metadata column containing highlight category labels. Defaults to \code{group.by}.}
+\item{highlight.by}{Metadata column containing highlight category labels.
+Defaults to `group.by`.}
 
 \item{highlight.groups}{Vector specifying categories to highlight.}
 
@@ -71,7 +72,8 @@ ImageDimPlot.ssc(
 
 \item{dark.background}{Logical; use a black panel background. By default TRUE.}
 
-\item{crop}{If TRUE, crop to the extent of cells/molecules. Or a numeric vector with four numbers specifying \code{c(min.x, max.x, min.y, max.y)}.}
+\item{crop}{If TRUE, crop to the extent of cells/molecules. Or a numeric vector
+with four numbers specifying `c(min.x, max.x, min.y, max.y)`.}
 
 \item{flip}{Logical; kept for compatibility with Seurat output (currently unused).}
 
@@ -81,23 +83,63 @@ ImageDimPlot.ssc(
 
 \item{scalebar.unit}{Unit label appended to the scale bar text.}
 
-\item{scalebar.position}{One of \code{bottomright}, \code{bottomleft}, \code{topright}, \code{topleft}, or a numeric length-2 vector specifying the \code{(x, y)} start position.}
+\item{scalebar.position}{One of `bottomright`, `bottomleft`, `topright`, `topleft`,
+or a numeric length-2 vector specifying the `(x, y)` start position.}
 
-\item{scalebar.color}{Color for the scale bar and label. Defaults to white on dark background and black otherwise.}
+\item{scalebar.color}{Color for the scale bar and label. Defaults to white on
+dark background and black otherwise.}
 
 \item{scalebar.text.size}{Text size for the scale bar label.}
 
 \item{scalebar.margin}{Margin as a fraction of the plot span when positioning the scale bar.}
 }
+\value{
+A ggplot object.
+}
 \description{
-Similar to Seurat's ImageDimPlot but allows highlighting specific categories and optionally overlaying molecule locations. Supports faceting by metadata column, cropping, and adding a scale bar.
+Similar to Seurat's ImageDimPlot but allows highlighting specific
+categories and optionally overlaying molecule locations. Supports faceting by
+metadata column, cropping, and adding a scale bar.
 }
 \examples{
+\dontrun{
 ImageDimPlot.ssc(srt, fov = "UV109fov1", group.by = "celltype_res0.1")
-ImageDimPlot.ssc(srt, fov = "UV109fov1", group.by = "celltype_res0.1", split.by = "Disease")
-ImageDimPlot.ssc(srt, fov = "UV109fov1", group.by = "celltype_res0.1", highlight.groups = c("Lymphocyte","KC_glandular_eccrine"))
+ImageDimPlot.ssc(
+  srt,
+  fov = "UV109fov1",
+  group.by = "celltype_res0.1",
+  split.by = "Disease"
+)
+ImageDimPlot.ssc(
+  srt,
+  fov = "UV109fov1",
+  group.by = "celltype_res0.1",
+  highlight.groups = c("Lymphocyte", "KC_glandular_eccrine")
+)
 srt$lowCount <- ifelse(srt$nCount_seqFISH < 100, "low", "high")
-ImageDimPlot.ssc(srt, fov = "UV109fov1", group.by = "celltype_res0.1", highlight.by = "lowCount", highlight.groups = "low", highlight.size = 0.5)
-ImageDimPlot.ssc(srt, fov = "UV109fov1", group.by = "celltype_res0.1", molecules = c("IFNB1","IL17A"), molecules.size = 0.7)
-ImageDimPlot.ssc(srt, fov = "UV109fov1", group.by = "celltype_res0.1", crop = T)
+ImageDimPlot.ssc(
+  srt,
+  fov = "UV109fov1",
+  group.by = "celltype_res0.1",
+  highlight.by = "lowCount",
+  highlight.groups = "low",
+  highlight.size = 0.5
+)
+ImageDimPlot.ssc(
+  srt,
+  fov = "UV109fov1",
+  group.by = "celltype_res0.1",
+  molecules = c("IFNB1", "IL17A"),
+  molecules.size = 0.7
+)
+ImageDimPlot.ssc(
+  srt,
+  fov = "UV109fov1",
+  group.by = "celltype_res0.1",
+  crop = TRUE
+)
+}
+}
+\seealso{
+Seurat::ImageDimPlot
 }

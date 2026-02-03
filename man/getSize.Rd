@@ -8,10 +8,14 @@ getSize(object, fov)
 }
 \arguments{
 \item{object}{Seurat object.}
+
+\item{fov}{The name of the image fov in the Seurat object.}
 }
 \description{
 Output in the order of: x.min, x.max, y.min, y.max.
 }
 \examples{
+\dontrun{
 binlim <- getSize(srt, fov = "roi1")
+}
 }

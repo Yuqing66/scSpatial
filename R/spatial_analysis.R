@@ -6,8 +6,10 @@
 #' @param plot.object An object storing the plot.
 #' @return A data frame with x,y coordinates.
 #' @examples
+#' \dontrun{
 #' g <- ImageDimPlot.ssc(srt, fov = fov, group.by = NULL)
 #' coords <- getClickCoordinates(g)
+#' }
 #' @export
 
 
@@ -73,7 +75,7 @@ getClickCoordinates <- function(plot.object){
 #' y <- 1:5
 #' xy1 <- c(0,0)
 #' xy2 <- c(5,5)
-#' calcDistance.toLine(x, y, p1, p2)
+#' calcDistance.toLine(x, y, p1 = xy1, p2 = xy2)
 #' calcDistance.toLine(x, y, k=1, b=0)
 #' @export
 
@@ -117,9 +119,11 @@ calcDistance.toLine <- function(x, y, coords.df=NULL, p1=NULL, p2=NULL, k=NULL, 
 #' @param ... Other parameters for calcDistance functions.
 #' @return A vector of distances.
 #' @examples
+#' \dontrun{
 #' g <- ImageDimPlot.ssc(srt, fov = fov, group.by = NULL)
 #' coords <- getClickCoordinates(g)
 #' d <- image_calcDistanceTo(srt, fov = fov, coords.df = coords)
+#' }
 #' @import Seurat
 #' @export
 
@@ -236,8 +240,6 @@ calcLocalExpression <- function(srt, center.coords=NULL, center.cellid=NULL, rad
   
   return(loc.exp)
 }
-
-
 
 
 

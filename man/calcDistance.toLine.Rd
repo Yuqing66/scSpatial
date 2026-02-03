@@ -40,6 +40,6 @@ x <- 1:1
 y <- 1:5
 xy1 <- c(0,0)
 xy2 <- c(5,5)
-calcDistance.toLine(x, y, p1, p2)
+calcDistance.toLine(x, y, p1 = xy1, p2 = xy2)
 calcDistance.toLine(x, y, k=1, b=0)
 }

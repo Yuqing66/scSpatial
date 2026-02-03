@@ -15,5 +15,7 @@ wdist(bins1, bins2, tab = "counts.smooth")
 Calculate Wasserstein distance between two wide matrices stored in bins1 and bins2 objects.
 }
 \examples{
+\dontrun{
 wdist()
+}
 }

@@ -19,12 +19,26 @@ SankeyPlot(
 \item{object}{Seurat object.}
 
 \item{groups}{a vector of column names in the metadata.}
+
+\item{width.node}{Width of Sankey nodes.}
+
+\item{size.text}{Font size for node labels.}
+
+\item{height}{Height of the output widget.}
+
+\item{width}{Width of the output widget.}
+
+\item{save}{Logical; if TRUE, save the widget as HTML and PDF.}
+
+\item{filename}{Optional filename for the saved widget.}
 }
 \description{
 Cell type annotation can happen at different granularity, e.g. main cell type, sub cell type, and sub sub cell type.
 To visualize the inclusion relationships of these annotations, a tree plot is generated.
 }
 \examples{
+\dontrun{
 groups <- c("CellType.3","CellType.2","CellType.1","subCellType.2","subCellType.1")
 p <- SankeyPlot(srt, groups)
+}
 }

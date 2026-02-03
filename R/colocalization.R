@@ -9,10 +9,12 @@
 #' @param FUN Function for weight.
 #' @param num.cutoff Remove bins with less than this number of points.
 #' @examples
+#' \dontrun{
 #' x <- cellCoords[,1]
 #' y <- cellCoords[,2]
 #' binlim <- c(min(x),max(x),min(y),max(y))
 #' bin2d(x=x, y=y, nbins=c(100,100), binlim=binlim)
+#' }
 #' @export
 
 bin2d <- function(x, y, weight=NULL, nbins=c(100,100), binlim, FUN=sum, num.cutoff=NULL){
@@ -54,7 +56,9 @@ bin2d <- function(x, y, weight=NULL, nbins=c(100,100), binlim, FUN=sum, num.cuto
 #' @param bins1,bins2 An object storing multiple tabs of matrices. Raw counts or after smoothing.
 #' @param tab The name of a list in bins object.
 #' @examples
+#' \dontrun{
 #' wdist()
+#' }
 #' @import transport
 #' @export
 
@@ -75,7 +79,9 @@ wdist <- function(bins1, bins2, tab="counts.smooth"){
 #' @param bins An object storing multiple tabs of matrices. Raw counts or after smoothing.
 #' @param tab The name of a list in bins object.
 #' @examples
+#' \dontrun{
 #' getwpp(bins, tab="counts.smooth")
+#' }
 #' @import transport
 #' @export
 
@@ -180,9 +186,11 @@ findDistance.euclidean <- function(value, sd){
 #' @param d.cutoff Value for point further than this distance will have value 0.
 #' @param ... Other parameters. sd is the standard deviation of the normal distribtion. h is the height of the center point.
 #' @examples
+#' \dontrun{
 #' coords.ifnb1 <- getCoords.transcript(srt, transcript="IFNB1", fov="UV109fov1")
 #' findDistance.euclidean(0.00001,sd=1000)
 #' field <- createField(coords.ifnb1, sd=1000, h=NULL, d.cutoff=2715, scale.factor=10000)
+#' }
 #' @export
 
 
@@ -212,10 +220,12 @@ createField <- function(coords, method.distr="gaussian", method.d="euclidean", w
 #' @param field A field object created by createField.
 #' @param coords A data.frame with each column as a dimension.
 #' @examples
+#' \dontrun{
 #' coords.moDC <- getCoords.cell(srt, ind = srt$subcelltype == "monocyte", fov = "roi1")
 #' values <- getValueInField(field, coords.moDC)
 #' plot(sort(values))
 #' plot(density(values))
+#' }
 #' @export
 #'
 
@@ -290,8 +300,11 @@ getValueInField <- function(field, coords){
 #' Output in the order of: x.min, x.max, y.min, y.max.
 #'
 #' @param object Seurat object.
+#' @param fov The name of the image fov in the Seurat object.
 #' @examples
+#' \dontrun{
 #' binlim <- getSize(srt, fov = "roi1")
+#' }
 #' @import Seurat
 #' @export
 #'
@@ -308,6 +321,3 @@ getSize <- function(object, fov){
   res <- c(x.min-1,x.max+1,y.min-1,y.max+1)
   return(res)
 }
-
-
-

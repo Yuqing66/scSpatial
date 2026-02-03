@@ -1,0 +1,17 @@
+utils::globalVariables(c(
+  ".__cluster__",
+  ".__score__",
+  "frame",
+  "group.vec",
+  "prop",
+  "r",
+  "rollingavg",
+  "rx",
+  "ry",
+  "split.vec",
+  "tot",
+  "value",
+  "x",
+  "y",
+  "z"
+))

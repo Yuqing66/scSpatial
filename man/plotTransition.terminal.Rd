@@ -19,6 +19,8 @@ plotTransition.terminal(
 )
 }
 \arguments{
+\item{srt}{Seurat object.}
+
 \item{initial}{Name of cell coordinates to start with. Embedding name in srt@reductions, or "images" for spatial slide.}
 
 \item{final}{Name of cell coordinates to transition into.}
@@ -38,16 +40,32 @@ plotTransition.terminal(
 \item{image.coord.flip}{To match the Seurat output, the x and y axises are by default flipped.}
 
 \item{match.scale.by}{Scale the initial and final coordinates. NULL, x, y, or both.}
-
-\item{object}{Seurat object.}
 }
 \description{
 Use the same parameters as in the plotTransition that generated the animation.
 }
 \examples{
-g.list <- plotTransition.terminal(srt, initial="umap", final="images", group.by="subcelltype", fov=NULL, point.size = 0.3, match.scale.by = "y")
+\dontrun{
+g.list <- plotTransition.terminal(
+  srt,
+  initial = "umap",
+  final = "images",
+  group.by = "subcelltype",
+  fov = NULL,
+  point.size = 0.3,
+  match.scale.by = "y"
+)
 g.list[[1]]
-ggsave(paste0("transition_animation_umap_to_images_start.png"), width = 16, height = 8)
+ggsave(
+  "transition_animation_umap_to_images_start.png",
+  width = 16,
+  height = 8
+)
 g.list[[2]]
-ggsave(paste0("transition_animation_umap_to_images_end.png"), width = 16, height = 8)
+ggsave(
+  "transition_animation_umap_to_images_end.png",
+  width = 16,
+  height = 8
+)
+}
 }

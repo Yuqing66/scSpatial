@@ -15,17 +15,22 @@ plotTransition(
   point.size = 0.5,
   point.alpha = 1,
   image.coord.flip = T,
-  match.scale.by = "y"
+  match.scale.by = "y",
+  plot.legend = FALSE,
+  plot.boundaryFrames = T,
+  cols = NULL
 )
 }
 \arguments{
+\item{srt}{Seurat object.}
+
 \item{initial}{Name of cell coordinates to start with. Embedding name in srt@reductions, or "images" for spatial slide.}
 
 \item{final}{Name of cell coordinates to transition into.}
 
 \item{group.by}{The name of metadata column to color by.}
 
-\item{fov}{Slides to include. "all" or a vector of slide names.}
+\item{fov}{Slides to include. NULL for all fovs or a vector of slide names.}
 
 \item{ncol}{Number of fovs in a row.}
 
@@ -39,15 +44,38 @@ plotTransition(
 
 \item{match.scale.by}{Scale the initial and final coordinates. NULL, x, y, or both.}
 
-\item{object}{Seurat object.}
+\item{plot.legend}{Logical. If TRUE, plot the legend. By default FALSE.}
+
+\item{plot.boundaryFrames}{Logical. If TRUE, plot the boundary frames, and use list as the output. By default TRUE.}
+
+\item{cols}{Optional named vector of colors for `group.by`.}
 }
 \description{
 Create a transition animation between different cell coordinate plots, e.g. fov, umap, pca
 }
 \examples{
-g <- plotTransition(srt, initial="umap", final="images", group.by="subcelltype", fov=NULL, point.size = 0.3, match.scale.by = "y")
-animate(g, duration = 7, fps = 10, start_pause = 10, end_pause = 10,
-        width = 16, height = 8, units = "in", res = 150,
-        renderer = gifski_renderer())
+\dontrun{
+g <- plotTransition(
+  srt,
+  initial = "umap",
+  final = "images",
+  group.by = "subcelltype",
+  fov = NULL,
+  point.size = 0.3,
+  match.scale.by = "y"
+)
+animate(
+  g,
+  duration = 7,
+  fps = 10,
+  start_pause = 10,
+  end_pause = 10,
+  width = 16,
+  height = 8,
+  units = "in",
+  res = 150,
+  renderer = gifski_renderer()
+)
 anim_save("transition_animation_umap_to_images.gif")
+}
 }
