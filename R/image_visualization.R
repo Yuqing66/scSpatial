@@ -610,11 +610,6 @@ ImageDimPlot.path <- function(ggplot.object, path.coords, ends.close = F,
 
 
 
-library(spatstat.geom)
-library(spatstat.explore)
-library(dplyr)
-library(ggplot2)
-library(viridisLite)  # for palettes if needed
 #' @title Contour plot of spatial feature expression
 #'
 #' @description
@@ -645,6 +640,9 @@ library(viridisLite)  # for palettes if needed
 #' @param scalebar.text.size Text size for the scalebar label.
 #' @param scalebar.margin Fractional margin from plot edges for automatic positions.
 #' @return A ggplot object.
+#' @importFrom spatstat.geom owin ppp
+#' @importFrom spatstat.explore density bw.diggle
+#' @importFrom grDevices colorRampPalette
 #' @examples
 #' g <- ImageFeaturePlot.contour(seqfish, feature = "IFNB1", fov = "HS009fov1")
 #' 
@@ -794,5 +792,3 @@ getImageSize <- function(object, fov){
   names(res) <- c("width","height")
   return(res)
 }
-
-
