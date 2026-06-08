@@ -195,7 +195,7 @@ findDistance.euclidean <- function(value, sd){
 
 
 createField <- function(coords, method.distr="gaussian", method.d="euclidean", weight=NULL, d.cutoff, ...){
-  dots <- match.call(expand.dots = FALSE)[["..."]]
+  dots <- list(...)
   if ("value" %in% colnames(coords)){
     ind <- grep("value", colnames(coords))
     weight <- coords[,ind]

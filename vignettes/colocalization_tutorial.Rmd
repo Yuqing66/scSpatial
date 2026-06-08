@@ -1,0 +1,340 @@
+---
+title: "Colocalization Analysis"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Colocalization Analysis}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  # eval    = FALSE,
+  collapse = TRUE,
+  comment  = "#>"
+)
+```
+
+## Overview
+
+This tutorial walks through a complete **cell type colocalization analysis**
+using scSpatial. The workflow has three steps:
+
+1. **Compute colocalization matrices** — for every cell, quantify how close it
+   is to each reference cell type using a Gaussian density field.
+2. **Plot per-slide heatmaps** — aggregate colocalization values by cell type
+   and visualize them as heatmaps for each tissue slide.
+3. **Plot average-across-slides heatmaps** — summarize the pattern across all
+   slides, and optionally highlight per-slide deviations.
+
+## Prerequisites
+
+```{r install, eval=FALSE}
+# Install scSpatial (if not yet installed)
+# devtools::install_github("Yuqing66/scSpatial")
+
+# ComplexHeatmap is needed for heatmap plotting (Bioconductor)
+if (!requireNamespace("ComplexHeatmap", quietly = TRUE)) {
+  BiocManager::install("ComplexHeatmap")
+}
+```
+
+```{r load-libraries}
+library(Seurat)
+library(scSpatial)
+library(ggplot2)
+library(ggforce)
+library(dplyr)
+library(tibble)
+```
+
+## Load your data
+
+scSpatial works with Seurat objects that contain spatial imaging data (e.g.,
+seqFISH, MERFISH, Xenium). Each tissue slide should be stored as a separate
+image in `srt@images`.
+
+```{r load-data}
+srt <- readRDS("~/Downloads/seqFISH_vignettes.rds")
+
+# Check which images (slides) are available
+names(srt@images)
+# e.g. [1] "UV109fov1" "UV109fov2" "UV253fov1" ...
+```
+
+### Choose the cell type column
+
+Identify which metadata column contains the cell type annotations you want to
+use for colocalization:
+
+```{r inspect-metadata}
+# See available columns
+head(srt@meta.data)
+
+# Set the column name you want to use
+celltype.col <- "subCellType.pub3.1.MCCD14"  # <-- change this to your column name
+```
+
+## Step 1: Compute colocalization matrices
+
+`calcColocalization()` iterates over every image and every reference cell type.
+For each reference type it builds a Gaussian density field from the reference
+cell positions, then evaluates that field at every cell location. The result is
+a data.frame with one row per cell and one column per reference cell type.
+
+The `sd` parameter controls the spatial smoothing radius — larger values
+consider a wider neighborhood. Use `ImageDimPlot.sizeGuide()` to choose an
+appropriate value for your data.
+
+```{r choose-sd}
+# Visualize circles of different radii to pick a good sd value
+ImageDimPlot.sizeGuide(
+  srt,
+  fov      = names(srt@images)[1],
+  group.by = celltype.col,
+  radii    = c(100, 200, 300, 500, 700, 1000)
+)
+```
+
+```{r calc-colocalization, eval = FALSE}
+coloc.values <- calcColocalization(
+  srt,
+  celltype.col = celltype.col,
+  sd           = 500,           # adjust based on sizeGuide
+  scale.factor = 10000
+)
+```
+
+
+```{r load pre-calculated table, echo = FALSE}
+coloc.values <- read.csv("~/Downloads/colocalization_values.csv", row.names = 1)
+```
+
+
+```{r}
+# Inspect the result
+dim(coloc.values)
+coloc.values[1:5, 1:5]
+```
+
+Optionally save spatial value plots for each reference cell type:
+
+```{r calc-colocalization-with-plots, eval=FALSE}
+coloc.values <- calcColocalization(
+  srt,
+  celltype.col = celltype.col,
+  sd           = 500,
+  save.plots   = TRUE,
+  plot.dir     = "colocalization_fields"
+)
+```
+
+### Save / load results
+
+Computing colocalization values can be time-consuming for large datasets.
+Save the result so you don't have to recompute:
+
+```{r save-coloc, eval=FALSE}
+write.csv(coloc.values, "colocalization_values.csv")
+
+```
+
+
+## Step 2: Compute and plot per-slide heatmaps
+
+`calcColocalizationHeatmap()` aggregates the per-cell values into a cell type ×
+cell type matrix for each slide. It supports three optional preprocessing
+steps:
+
+- **merge.list**: merge related subtypes into a single label
+- **rm.celltypes**: remove cell types from all slides
+- **rm.celltypes.per.image**: remove cell types from specific slides (e.g.,
+  tissue structures not present in a given biopsy)
+
+```{r calc-heatmap}
+heatmap.list <- calcColocalizationHeatmap(
+  srt,
+  coloc.values = coloc.values,
+  celltype.col = celltype.col,
+
+  # Optional: merge subtypes
+  merge.list = list(
+    CD4      = c("CD4", "CD4_CCL17", "CD4_CXCL13"),
+    Pericyte = c("Pericyte", "Pericyte_activated"),
+    EC       = c("EC", "EC_proliferating", "EC_immune_interactive")
+  ),
+
+  # Optional: remove from ALL slides
+  rm.celltypes = c("MC_unk_1", "MC_unk_2", "Neutrophil"),
+
+  # Optional: remove from specific slides
+  rm.celltypes.per.image = list(
+    UV109fov1 = c("KC_bulge", "B_cell"),
+    UV109fov2 = c("KC_bulge", "B_cell"),
+    UV243fov1 = c("KC_eccrine_glandular", "KC_eccrine_ductal")
+  )
+)
+
+# Inspect: one entry per slide
+names(heatmap.list)
+```
+
+### Understanding the scaling
+
+Each entry in `heatmap.list` contains two matrices:
+
+- **`$heatmap`**: raw mean colocalization values per cell type pair (query row,
+  reference column), plus an `"all"` row representing the overall mean across
+  all cells regardless of type.
+- **`$heatmap.scaled`**: a normalized version that removes the effects of cell
+  type abundance and baseline field density, making values comparable across
+  reference cell types.
+
+The scaling works as follows for each reference column:
+
+$$\text{scaled value} = \frac{\text{raw value} - \text{mean(all cells)}}{\text{self-colocalization} - \text{mean(all cells)}} \times 100$$
+
+This sets two anchors:
+- **Self-colocalization = 100**: the reference cell type's own colocalization
+  with itself.
+- **Overall mean = 0** (`"all"` row): the average colocalization value across
+  every cell in the image, regardless of type.
+
+As a result, a scaled value of **50** means the query cell type is halfway
+between a random cell and the reference type itself. Values **above 100** are
+possible if a query type is spatially closer to the reference than the reference
+cells are to each other on average. Values **below 0** indicate spatial
+avoidance (the query type is further from the reference than a random cell
+would be). This normalization removes the influence of cell type abundance and
+field density, making colocalization directly comparable across reference types.
+
+```{r inspect-heatmap}
+# Example: first slide — scaled matrix
+heatmap.list[[1]]$heatmap.scaled[1:5, 1:5]
+```
+
+### Plot per-slide heatmaps
+
+Save each slide as a separate PDF:
+
+```{r plot-per-slide-save, eval=FALSE}
+plotColocalizationHeatmap(
+  heatmap.list,
+  type       = "per.slide",
+  cluster.by = "reference",
+  file       = "heatmap_per_slide.pdf"
+)
+# Creates: heatmap_per_slide_UV109fov1.pdf, heatmap_per_slide_UV109fov2.pdf, ...
+```
+
+
+## Step 3: Plot average-across-slides heatmap
+
+Average the scaled colocalization values across all slides to get the overall
+pattern.
+
+### Clustering modes
+
+The `cluster.by` parameter controls how cell types are ordered on the two axes
+of the heatmap. Rows are **query** cell types (whose colocalization is being
+measured) and columns are **reference** cell types (whose spatial field is
+being queried).
+
+| `cluster.by` | Columns (reference) | Rows (query) | Best for |
+|---|---|---|---|
+| `"reference"` *(default)* | Hierarchically clustered | Mirrored to same order | Comparing how all cell types enrich near each reference type; diagonal self-enrichment is easy to read |
+| `"query"` | Mirrored to same order | Hierarchically clustered | Grouping query types with similar colocalization fingerprints |
+| `"both"` | Independently clustered | Independently clustered | Exploratory overview |
+| `"none"` | Input order | Input order | Custom ordering |
+
+For `"reference"` and `"query"` modes, the heatmap is square (no `"all"` row)
+and the shared order means the diagonal runs top-left to bottom-right,
+making self-colocalization easy to verify.
+
+```{r plot-average}
+# Default: cluster by reference, mirror order onto query axis
+plotColocalizationHeatmap(
+  heatmap.list,
+  type       = "average",
+  cluster.by = "reference"
+)
+```
+
+```{r plot-average-cluster-options, eval=FALSE}
+# Cluster by query cell types, mirror onto reference axis
+plotColocalizationHeatmap(
+  heatmap.list,
+  type       = "average",
+  cluster.by = "query"
+)
+
+# Cluster rows and columns independently
+plotColocalizationHeatmap(
+  heatmap.list,
+  type       = "average",
+  cluster.by = "both",
+  file       = "heatmap_average_clusterBoth.pdf"
+)
+```
+
+### Difference heatmaps: per-slide vs. average
+
+Highlight what is unique about each slide by subtracting the cross-slide
+average:
+
+```{r plot-difference, eval=FALSE}
+plotColocalizationHeatmap(
+  heatmap.list,
+  type       = "difference",
+  cluster.by = "reference",
+  file       = "heatmap_difference.pdf"
+)
+# Creates: heatmap_difference_UV109fov1_diff.pdf, etc.
+```
+
+
+## Putting it all together
+
+Here is the complete workflow in a compact script:
+
+```{r full-workflow, eval = FALSE}
+library(Seurat)
+library(scSpatial)
+
+# ---- Load data ----
+srt <- readRDS("path/to/seurat.rds")
+celltype.col <- "CellType"
+
+# ---- Step 1: Compute colocalization values ----
+coloc.values <- calcColocalization(srt, celltype.col = celltype.col, sd = 500)
+
+# ---- Step 2: Build heatmap matrices ----
+heatmap.list <- calcColocalizationHeatmap(
+  srt, coloc.values,
+  celltype.col = celltype.col,
+  merge.list = list(CD4 = c("CD4", "CD4_CCL17", "CD4_CXCL13")),
+  rm.celltypes = c("Neutrophil"),
+  rm.celltypes.per.image = list(UV109fov1 = c("B_cell"))
+)
+
+# ---- Step 3a: Per-slide heatmaps ----
+plotColocalizationHeatmap(heatmap.list, type = "per.slide",
+                          cluster.by = "reference",
+                          file = "heatmap_per_slide.pdf")
+
+# ---- Step 3b: Average heatmap ----
+plotColocalizationHeatmap(heatmap.list, type = "average",
+                          cluster.by = "reference",
+                          file = "heatmap_average.pdf")
+
+# ---- Step 3c: Difference heatmaps ----
+plotColocalizationHeatmap(heatmap.list, type = "difference",
+                          cluster.by = "reference",
+                          file = "heatmap_difference.pdf")
+```
+
+## Session Info
+
+```{r session-info}
+sessionInfo()
+```

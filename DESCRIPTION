@@ -31,4 +31,8 @@ Imports:
     webshot,
     zoo
 Suggests:
-    htmlwidgets
+    ComplexHeatmap,
+    htmlwidgets,
+    knitr,
+    rmarkdown
+VignetteBuilder: knitr
