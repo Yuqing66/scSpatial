@@ -16,7 +16,8 @@ ImageDimPlot.values(
   alpha.srt = 0.1,
   size.srt = 0.1,
   color.srt = "lightblue",
-  dark.background = T
+  dark.background = T,
+  bg.coords = NULL
 )
 }
 \arguments{

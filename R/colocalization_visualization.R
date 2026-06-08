@@ -198,9 +198,12 @@ plotContour <- function(df, flip=T, shape="long"){
 
 ImageDimPlot.values <- function(coords=NULL, values, alpha = 1, size = 0.8, flip=F,
                                 color=c("grey","purple","red","orange","yellow"),
-                                srt=NULL, fov=NULL, alpha.srt=0.1, size.srt=0.1, color.srt="lightblue",dark.background=T){
+                                srt=NULL, fov=NULL, alpha.srt=0.1, size.srt=0.1, color.srt="lightblue",dark.background=T,
+                                bg.coords=NULL){
   g <- ggplot()
-  if(!is.null(srt)){
+  if(!is.null(bg.coords)){
+    g <- g + geom_point(data = bg.coords, mapping = aes(x=x,y=y), alpha=alpha.srt, size=size.srt, color=color.srt)
+  }else if(!is.null(srt)){
     df <- data.frame(x=srt@images[[fov]]$centroids@coords[,1],
                      y=srt@images[[fov]]$centroids@coords[,2])
     g <- g + geom_point(data = df, mapping = aes(x=x,y=y), alpha=alpha.srt, size=size.srt, color=color.srt)
@@ -328,7 +331,8 @@ ImageDimPlot.sizeGuide <- function(object, fov, group.by=NULL, size = 0.2, cols 
   g <- ggplot() +
     geom_point(df, mapping = aes(x=x,y=y,col=.data[[group.by]]), size = size, alpha = alpha) +
     theme(panel.grid = element_blank(),
-          axis.title = element_blank()) +
+          axis.title = element_blank(),
+          legend.position = "none") +
     coord_fixed(ratio = 1)
   if (!is.null(cols)) {
     g <- g + scale_color_manual(values = cols)

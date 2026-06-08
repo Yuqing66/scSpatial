@@ -60,29 +60,32 @@ calcColocalization <- function(srt, celltype.col, sd = 500, scale.factor = 10000
       h <- (tmp[2, 2] - tmp[2, 1]) / 5000
     }
 
+    # Pre-extract coordinates for all cells in this image ONCE
+    coords.all <- getCoords.cell(srt, fov = image.name)
+    cells.in.image <- rownames(coords.all)
+
+    # Get all cell types for cells in this image ONCE
+    celltypes.all <- srt@meta.data[cells.in.image, celltype.col]
+
     for (i.ref in seq_along(celltypes.ref)) {
       celltype.ref <- celltypes.ref[i.ref]
       if (verbose) message("  Reference: ", celltype.ref,
                            " (", i.ref, "/", length(celltypes.ref), ")")
 
-      # Identify reference cells in this image
-      ind.ref <- srt@meta.data[, celltype.col] == celltype.ref
-      srt.ref <- srt[, ind.ref]
+      # Identify reference cells directly from pre-extracted celltypes
+      cells.ref.in.image <- cells.in.image[!is.na(celltypes.all) & celltypes.all == celltype.ref]
 
-      cells.in.image <- srt@images[[image.name]]@boundaries$centroids@cells
-      cells.ref.in.image <- intersect(cells.in.image, colnames(srt.ref))
       if (length(cells.ref.in.image) < 2) {
         if (verbose) message("    Skipping: fewer than 2 reference cells")
         next
       }
 
-      # Create Gaussian field from reference cells
-      coords.ref <- getCoords.cell(srt.ref, fov = image.name)
+      # Create Gaussian field from reference cells using subset of coords
+      coords.ref <- coords.all[cells.ref.in.image, , drop = FALSE]
       field <- createField(coords.ref, sd = sd, h = NULL, d.cutoff = cutoff,
                            scale.factor = scale.factor)
 
       # Evaluate field at all cell positions
-      coords.all <- getCoords.cell(srt, fov = image.name)
       values <- getValueInField(field, coords.all)
       names(values) <- rownames(coords.all)
 
@@ -96,8 +99,8 @@ calcColocalization <- function(srt, celltype.col, sd = 500, scale.factor = 10000
       # Optional spatial plots
       if (save.plots && !is.null(plot.dir)) {
         p <- ImageDimPlot.values(
-          coords = coords.all, values, fov = image.name,
-          srt = srt, dark.background = TRUE, size = 0.1
+          coords = coords.all, values = values, fov = image.name,
+          bg.coords = coords.all, dark.background = TRUE, size = 0.1
         ) +
           theme(axis.text = element_blank(),
                 axis.title = element_blank(),
@@ -299,16 +302,17 @@ calcColocalizationHeatmap <- function(srt, coloc.values, celltype.col,
 #'     \item \code{"reference"} (default) — cluster reference cell types
 #'       (columns) by hierarchical clustering, then reorder query rows to match
 #'       the same order. Recommended for comparing colocalization profiles across
-#'       reference types.
+#'       reference types. Applies consistently to all \code{type} outputs.
 #'     \item \code{"query"} — cluster query cell types (rows) by hierarchical
 #'       clustering, then reorder reference columns to the same order. Useful
 #'       when you want to group query types with similar colocalization patterns.
+#'       Applies consistently to all \code{type} outputs.
 #'     \item \code{"both"} — cluster rows and columns independently.
 #'     \item \code{"none"} — no clustering; preserve the input order.
 #'     \item \code{"average.order"} — only for \code{type = "difference"}.
 #'       Computes the reference-based clustering order from the cross-slide
-#'       average heatmap, then applies that fixed order to each difference
-#'       heatmap. Reproduces the original workflow of ordering per-slide
+#'       average heatmap, then applies that fixed order to both columns and rows
+#'       of each difference heatmap. Reproduces the original workflow of ordering per-slide
 #'       deviations by the average's structure.
 #'   }
 #' @param file PDF file path. If \code{NULL}, returns the Heatmap object(s)
@@ -368,14 +372,42 @@ plotColocalizationHeatmap <- function(heatmap.list,
     hmaps <- list()
     for (sample.name in names(heatmap.list)) {
       mat <- as.matrix(heatmap.list[[sample.name]]$heatmap.scaled)
-      hmap <- ComplexHeatmap::Heatmap(
-        mat,
-        cluster_rows    = cluster_rows,
-        cluster_columns = cluster_columns,
-        show_row_dend   = FALSE,
-        show_column_dend = FALSE,
-        column_title    = sample.name
-      )
+      
+      if (cluster.by %in% c("reference", "query")) {
+        mat.sq <- mat[rownames(mat) != "all", , drop = FALSE]
+        if (cluster.by == "reference") {
+          hc            <- hclust(dist(t(mat.sq)))       # cluster columns (reference)
+          ordered.names <- colnames(mat.sq)[hc$order]
+          if ("all" %in% rownames(mat)) {
+            mat.ordered <- rbind(mat.sq[ordered.names, ordered.names, drop = FALSE], all = mat["all", ordered.names])
+          } else {
+            mat.ordered <- mat.sq[ordered.names, ordered.names, drop = FALSE]
+          }
+        } else {                                         # "query"
+          hc            <- hclust(dist(mat.sq))          # cluster rows (query)
+          ordered.names <- rownames(mat.sq)[hc$order]
+          mat.ordered <- mat.sq[ordered.names, ordered.names, drop = FALSE]
+        }
+        
+        hmap <- ComplexHeatmap::Heatmap(
+          mat.ordered,
+          cluster_rows    = FALSE,
+          cluster_columns = FALSE,
+          show_row_dend   = FALSE,
+          show_column_dend = FALSE,
+          column_title    = sample.name
+        )
+      } else {
+        hmap <- ComplexHeatmap::Heatmap(
+          mat,
+          cluster_rows    = cluster_rows,
+          cluster_columns = cluster_columns,
+          show_row_dend   = FALSE,
+          show_column_dend = FALSE,
+          column_title    = sample.name
+        )
+      }
+      
       hmaps[[sample.name]] <- hmap
 
       if (!is.null(file)) {
@@ -385,7 +417,12 @@ plotColocalizationHeatmap <- function(heatmap.list,
         dev.off()
       }
     }
-    return(invisible(hmaps))
+    
+    if (!is.null(file)) {
+      return(invisible(hmaps))
+    } else {
+      return(hmaps)
+    }
   }
 
   # ================================================================
@@ -442,8 +479,10 @@ plotColocalizationHeatmap <- function(heatmap.list,
       pdf(file, width = width, height = height)
       ComplexHeatmap::draw(hmap)
       dev.off()
+      return(invisible(hmap))
+    } else {
+      return(hmap)
     }
-    return(invisible(hmap))
   }
 
   # ================================================================
@@ -467,16 +506,46 @@ plotColocalizationHeatmap <- function(heatmap.list,
         # Reorder to match average heatmap's clustering order
         common <- intersect(avg.order, colnames(diff.mat))
         diff.mat <- diff.mat[common, common, drop = FALSE]
+        
+        hmap <- ComplexHeatmap::Heatmap(
+          as.matrix(diff.mat),
+          cluster_rows     = FALSE,
+          cluster_columns  = FALSE,
+          show_row_dend    = FALSE,
+          show_column_dend = FALSE,
+          column_title     = paste0(sample.name, " vs. average")
+        )
+      } else if (cluster.by %in% c("reference", "query")) {
+        mat.sq <- as.matrix(diff.mat)
+        if (cluster.by == "reference") {
+          hc            <- hclust(dist(t(mat.sq)))
+          ordered.names <- colnames(mat.sq)[hc$order]
+          diff.mat <- mat.sq[ordered.names, ordered.names, drop = FALSE]
+        } else {
+          hc            <- hclust(dist(mat.sq))
+          ordered.names <- rownames(mat.sq)[hc$order]
+          diff.mat <- mat.sq[ordered.names, ordered.names, drop = FALSE]
+        }
+        
+        hmap <- ComplexHeatmap::Heatmap(
+          as.matrix(diff.mat),
+          cluster_rows     = FALSE,
+          cluster_columns  = FALSE,
+          show_row_dend    = FALSE,
+          show_column_dend = FALSE,
+          column_title     = paste0(sample.name, " vs. average")
+        )
+      } else {
+        hmap <- ComplexHeatmap::Heatmap(
+          as.matrix(diff.mat),
+          cluster_rows     = cluster_rows,
+          cluster_columns  = cluster_columns,
+          show_row_dend    = FALSE,
+          show_column_dend = FALSE,
+          column_title     = paste0(sample.name, " vs. average")
+        )
       }
-
-      hmap <- ComplexHeatmap::Heatmap(
-        as.matrix(diff.mat),
-        cluster_rows     = cluster_rows,
-        cluster_columns  = cluster_columns,
-        show_row_dend    = FALSE,
-        show_column_dend = FALSE,
-        column_title     = paste0(sample.name, " vs. average")
-      )
+      
       hmaps[[sample.name]] <- hmap
 
       if (!is.null(file)) {
@@ -486,7 +555,12 @@ plotColocalizationHeatmap <- function(heatmap.list,
         dev.off()
       }
     }
-    return(invisible(hmaps))
+    
+    if (!is.null(file)) {
+      return(invisible(hmaps))
+    } else {
+      return(hmaps)
+    }
   }
 }
 

@@ -68,9 +68,6 @@ Identify which metadata column contains the cell type annotations you want to
 use for colocalization:
 
 ```{r inspect-metadata}
-# See available columns
-head(srt@meta.data)
-
 # Set the column name you want to use
 celltype.col <- "subCellType.pub3.1.MCCD14"  # <-- change this to your column name
 ```
@@ -86,13 +83,13 @@ The `sd` parameter controls the spatial smoothing radius — larger values
 consider a wider neighborhood. Use `ImageDimPlot.sizeGuide()` to choose an
 appropriate value for your data.
 
-```{r choose-sd}
+```{r choose-sd, fig.width=8, fig.height=8, out.width="60%"}
 # Visualize circles of different radii to pick a good sd value
 ImageDimPlot.sizeGuide(
   srt,
   fov      = names(srt@images)[1],
   group.by = celltype.col,
-  radii    = c(100, 200, 300, 500, 700, 1000)
+  radii    = c(200, 300, 500, 700, 1000)
 )
 ```
 
@@ -246,12 +243,12 @@ being queried).
 | `"query"` | Mirrored to same order | Hierarchically clustered | Grouping query types with similar colocalization fingerprints |
 | `"both"` | Independently clustered | Independently clustered | Exploratory overview |
 | `"none"` | Input order | Input order | Custom ordering |
+| `"average.order"` | Fixed to average order | Fixed to average order | Applying a consistent layout across difference heatmaps |
 
-For `"reference"` and `"query"` modes, the heatmap is square (no `"all"` row)
-and the shared order means the diagonal runs top-left to bottom-right,
-making self-colocalization easy to verify.
+For `"reference"` and `"query"` modes, the heatmap is largely square (no `"all"` row for `"query"` mode) and the shared order means the diagonal runs top-left to bottom-right,
+making self-colocalization easy to verify. These ordering modes are applied consistently across all heatmap `type`s (`"average"`, `"per.slide"`, and `"difference"`).
 
-```{r plot-average}
+```{r plot-average, fig.width=12, fig.height=12, out.width="100%"}
 # Default: cluster by reference, mirror order onto query axis
 plotColocalizationHeatmap(
   heatmap.list,
@@ -290,6 +287,29 @@ plotColocalizationHeatmap(
   file       = "heatmap_difference.pdf"
 )
 # Creates: heatmap_difference_UV109fov1_diff.pdf, etc.
+```
+
+
+## Working with the Returned Heatmap Objects
+
+By default, `plotColocalizationHeatmap()` draws the heatmap(s) to the active graphics device or saves them to a PDF if `file` is provided. The function also returns the underlying `ComplexHeatmap::Heatmap` objects so you can manipulate them later.
+
+- When `type = "average"`, it returns a single `Heatmap` object.
+- When `type = "per.slide"` or `type = "difference"`, it returns a **named list** of `Heatmap` objects (one per slide).
+
+If you provide a `file`, these objects are returned *invisibly* to prevent auto-printing to the console. If no `file` is specified, they are returned normally.
+
+You can capture the returned objects to modify the plots further, extract the clustering dendrograms, or combine them with other plots:
+
+```{r returned-objects, eval=FALSE}
+# Capture the list of Heatmap objects (without saving to PDF)
+hmaps <- plotColocalizationHeatmap(heatmap.list, type = "per.slide")
+
+# Draw a specific slide's heatmap later
+ComplexHeatmap::draw(hmaps[["UV109fov1"]])
+
+# Or capture the average Heatmap object
+avg_hmap <- plotColocalizationHeatmap(heatmap.list, type = "average")
 ```
 
 

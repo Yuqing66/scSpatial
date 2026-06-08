@@ -25,16 +25,17 @@ each axis. One of:
   \item \code{"reference"} (default) — cluster reference cell types
     (columns) by hierarchical clustering, then reorder query rows to match
     the same order. Recommended for comparing colocalization profiles across
-    reference types.
+    reference types. Applies consistently to all \code{type} outputs.
   \item \code{"query"} — cluster query cell types (rows) by hierarchical
     clustering, then reorder reference columns to the same order. Useful
     when you want to group query types with similar colocalization patterns.
+    Applies consistently to all \code{type} outputs.
   \item \code{"both"} — cluster rows and columns independently.
   \item \code{"none"} — no clustering; preserve the input order.
   \item \code{"average.order"} — only for \code{type = "difference"}.
     Computes the reference-based clustering order from the cross-slide
-    average heatmap, then applies that fixed order to each difference
-    heatmap. Reproduces the original workflow of ordering per-slide
+    average heatmap, then applies that fixed order to both columns and rows
+    of each difference heatmap. Reproduces the original workflow of ordering per-slide
     deviations by the average's structure.
 }}
 

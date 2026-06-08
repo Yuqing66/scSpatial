@@ -253,33 +253,43 @@ getValueInField <- function(field, coords){
   }
 
   # loop through all query dots
-  values.query <- c()
-  # leave the is.null(weight) outside of the loop to avoid repetition
+  values.query <- numeric(nrow(coords))
+  d.cutoff <- field$parameters$d.cutoff
+  
+  field_coords_x <- field$coords[,1]
+  field_coords_y <- field$coords[,2]
+  
   if (!is.null(field$weight)){
-    for (i in 1:nrow(coords)){
-      coords.p <- as.numeric(coords[i,])
-      d.all <- apply(field$coords, 1, function(x){
-        d <- f.d(coord1 = as.numeric(x), coord2 = coords.p)
-        return(d)
-      })
-      # set value to 0 if too far
-      d.cutoff <- field$parameters$d.cutoff
-      ind <- d.all < d.cutoff
-      value <- sum(f.distr(d.all[ind]) * field$weight[ind]) # the only difference
-      values.query <- c(values.query, value)
+    if (field$method.d == "euclidean") {
+      for (i in seq_len(nrow(coords))){
+        coords.p <- as.numeric(coords[i,])
+        d.all <- sqrt((field_coords_x - coords.p[1])^2 + (field_coords_y - coords.p[2])^2)
+        ind <- d.all < d.cutoff
+        values.query[i] <- sum(f.distr(d.all[ind]) * field$weight[ind])
+      }
+    } else {
+      for (i in seq_len(nrow(coords))){
+        coords.p <- as.numeric(coords[i,])
+        d.all <- apply(field$coords, 1, function(x) f.d(coord1 = as.numeric(x), coord2 = coords.p))
+        ind <- d.all < d.cutoff
+        values.query[i] <- sum(f.distr(d.all[ind]) * field$weight[ind])
+      }
     }
   }else{
-    for (i in 1:nrow(coords)){
-      coords.p <- as.numeric(coords[i,])
-      d.all <- apply(field$coords, 1, function(x){
-        d <- f.d(coord1 = as.numeric(x), coord2 = coords.p)
-        return(d)
-      })
-      # set value to 0 if too far
-      d.cutoff <- field$parameters$d.cutoff
-      ind <- d.all < d.cutoff
-      value <- sum(f.distr(d.all[ind]))  # the only difference
-      values.query <- c(values.query, value)
+    if (field$method.d == "euclidean") {
+      for (i in seq_len(nrow(coords))){
+        coords.p <- as.numeric(coords[i,])
+        d.all <- sqrt((field_coords_x - coords.p[1])^2 + (field_coords_y - coords.p[2])^2)
+        ind <- d.all < d.cutoff
+        values.query[i] <- sum(f.distr(d.all[ind]))
+      }
+    } else {
+      for (i in seq_len(nrow(coords))){
+        coords.p <- as.numeric(coords[i,])
+        d.all <- apply(field$coords, 1, function(x) f.d(coord1 = as.numeric(x), coord2 = coords.p))
+        ind <- d.all < d.cutoff
+        values.query[i] <- sum(f.distr(d.all[ind]))
+      }
     }
   }
 
