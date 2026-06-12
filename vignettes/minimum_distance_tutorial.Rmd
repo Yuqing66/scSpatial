@@ -1,0 +1,319 @@
+---
+title: "Minimum Distance Analysis"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Minimum Distance Analysis}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  # eval    = FALSE,
+  collapse = TRUE,
+  comment  = "#>"
+)
+```
+
+## Overview
+
+This tutorial walks through **spatial minimum distance analysis** using
+scSpatial. The analysis computes the minimum distance from a cell of interest
+to the nearest cell in a reference population, which represents a tissue
+structure or landmark.
+
+### When to use minimum distance vs. colocalization
+
+scSpatial provides two complementary spatial analyses:
+
+| | Colocalization | Minimum Distance |
+|---|---|---|
+| **Method** | Sums Gaussian field values from *all* reference cells | Finds the distance to the *nearest* reference cell |
+| **Question** | "How enriched is this cell in a cell-type neighborhood?" | "How close is this cell to a tissue structure?" |
+| **Best for** | Cell–cell attraction/repulsion, where more reference cells produce a stronger signal (chemotaxis) | Spatial regionalization, where the cell's position relative to a tissue boundary matters regardless of the number of cells defining it |
+
+**Why use minimum distance here?** Consider myeloid cells (MC\_CD14) distributed
+across a tissue section. Their distribution is largely determined by the *tissue
+region* they reside in (epidermis vs. dermis vs. immune aggregates), not by how
+many reference cells attract them. Summing colocalization scores would make some
+regions appear artificially "hotter" simply because they have more reference
+cells. Minimum distance avoids this by capturing only the proximity to the
+nearest structural landmark.
+
+## Prerequisites
+
+```{r install, eval=FALSE}
+# Install scSpatial (if not yet installed)
+# devtools::install_github("Yuqing66/scSpatial")
+
+# patchwork is needed for margin plots
+if (!requireNamespace("patchwork", quietly = TRUE)) {
+  install.packages("patchwork")
+}
+```
+
+```{r load-libraries}
+library(Seurat)
+library(scSpatial)
+library(ggplot2)
+library(dplyr)
+```
+
+## Load your data
+
+scSpatial works with Seurat objects that contain spatial imaging data (e.g.,
+seqFISH, MERFISH, Xenium). Each tissue slide should be stored as a separate
+image in `srt@images`.
+
+```{r load-data}
+srt <- readRDS("~/Downloads/seqFISH_vignettes.rds")
+
+# Check which images (slides) are available
+names(srt@images)
+```
+
+### Choose the cell type column
+
+```{r inspect-metadata}
+# Set the column name for cell type annotations
+celltype.col <- "subCellType.pub3.1.MCCD14"
+```
+
+
+## Step 1: Compute minimum distances
+
+`calcMinDistance()` iterates over every image and computes the Euclidean
+distance from every cell to the nearest reference cell. You specify reference
+cell types as either a character vector (for one reference population) or a
+named list (for multiple reference populations computed at once).
+
+```{r calc-mindist, eval=FALSE}
+# Compute minimum distance to multiple reference populations at once
+dist.values <- calcMinDistance(
+  srt,
+  celltype.col = celltype.col,
+
+  # Named list: each element defines a reference population
+  ref.celltypes = list(
+    KC_basal      = c("KC_basal"),
+    CD4_CD8       = c("CD4", "CD8"),
+    FB_proInf_sup = c("FB_proInf_sup"),
+    FB_proInf_deep = c("FB_proInf_deep")
+  )
+)
+```
+
+```{r load-precalc, echo=FALSE}
+dist.values <- read.csv("~/Downloads/min_distance_values.csv", row.names = 1)
+```
+
+```{r inspect-mindist}
+# Inspect the result: one column per reference population
+dim(dist.values)
+dist.values[1:5, ]
+```
+
+### Save / load results
+
+```{r save-mindist, eval=FALSE}
+write.csv(dist.values, "min_distance_values.csv")
+```
+
+
+### Optionally save spatial value plots
+
+You can visualize minimum distance values on the tissue image to see the
+spatial gradient:
+
+```{r calc-mindist-plots, eval=FALSE}
+dist.values <- calcMinDistance(
+  srt,
+  celltype.col = celltype.col,
+  ref.celltypes = list(KC_basal = c("KC_basal")),
+  save.plots   = TRUE,
+  plot.dir     = "minDist_spatial_plots"
+)
+```
+
+
+
+
+
+
+## Step 2: Two-structure analysis
+
+The key insight of minimum distance analysis is that cells can be positioned
+relative to **two** tissue structures simultaneously. By plotting the minimum
+distance to structure A on the x-axis and to structure B on the y-axis, you
+create a 2D spatial coordinate system that reveals which tissue compartment
+each cell resides in:
+- Cells **near structure A** cluster near the x = 0 line
+- Cells **near structure B** cluster near the y = 0 line
+- Cells **between the two structures** spread across the diagonal
+
+Coloring by a cell state or transition score reveals how cell phenotypes
+map onto these tissue compartments.
+
+
+
+### Subset query cells
+
+Focus on MC\_CD14 cells — the myeloid population whose spatial distribution
+we want to characterize:
+
+```{r subset-query}
+# Add minimum distance columns to metadata
+for (col in colnames(dist.values)) {
+  srt@meta.data[[paste0("minDist_", col)]] <- dist.values[colnames(srt), col]
+}
+
+# Subset to MC_CD14 cells
+df.mc <- srt@meta.data[srt@meta.data[[celltype.col]] == "MC_CD14", ]
+```
+
+
+### `plotWithMargin()`: scatter with margin trend panels
+
+`plotWithMargin()` creates a scatter plot with loess trend panels on the left
+and bottom margins. The margin panels show how the color variable (e.g.,
+transition rank) changes along each axis, summarizing the spatial trend.
+
+### Example 1: Epidermis (KC_basal) vs. Immune aggregates (CD4/CD8)
+
+```{r two-structure-1, fig.width=7, fig.height=6, out.width="90%"}
+df.plot <- df.mc[!is.na(df.mc$minDist_KC_basal) &
+                 !is.na(df.mc$minDist_CD4_CD8) &
+                 !is.na(df.mc$transition_rank), ]
+
+plotWithMargin(
+  df.plot,
+  x.by     = "minDist_KC_basal",
+  y.by     = "minDist_CD4_CD8",
+  color.by = "transition_rank"
+)
+```
+
+In this plot:
+- **Bottom-left corner**: MC\_CD14 cells near both the epidermis and immune
+  aggregates
+- **Bottom-right**: cells far from the epidermis but near immune aggregates
+  (deep dermis)
+- **Top-left**: cells near the epidermis but far from immune aggregates
+  (superficial dermis)
+- The **margin panels** show the loess trend of transition rank along each
+  axis — if the transition is spatially organized, the loess curve will show
+  a gradient
+
+
+### Example 2: Papillary dermis (FB\_proInf\_sup) vs. Immune aggregates (FB\_proInf\_deep)
+
+```{r two-structure-2, fig.width=7, fig.height=6, out.width="90%"}
+df.plot <- df.mc[!is.na(df.mc$minDist_FB_proInf_sup) &
+                 !is.na(df.mc$minDist_FB_proInf_deep) &
+                 !is.na(df.mc$transition_rank), ]
+
+plotWithMargin(
+  df.plot,
+  x.by     = "minDist_FB_proInf_sup",
+  y.by     = "minDist_FB_proInf_deep",
+  color.by = "transition_rank"
+)
+```
+
+### Customizing colors
+
+```{r custom-colors, fig.width=7, fig.height=6, out.width="90%", eval=FALSE}
+# Green-to-red scale
+plotWithMargin(
+  df.plot,
+  x.by     = "minDist_KC_basal",
+  y.by     = "minDist_CD4_CD8",
+  color.by = "transition_rank",
+  cols     = c("green", "yellow", "orange", "red")
+)
+```
+
+
+### Per-slide analysis
+
+You can run the same analysis for each slide individually to check for
+consistency or slide-specific patterns:
+
+```{r per-slide, eval=FALSE}
+image.names <- unique(srt$Sample)
+
+for (image.name in image.names) {
+  df.tmp <- df.plot[df.plot$Sample == image.name, ]
+  if (nrow(df.tmp) < 10) next
+
+  p <- plotWithMargin(
+    df.tmp,
+    x.by     = "minDist_KC_basal",
+    y.by     = "minDist_CD4_CD8",
+    color.by = "transition_rank"
+  )
+  ggsave(paste0("minDist_MC_CD14_KC_basal_CD4CD8_", image.name, ".pdf"),
+         plot = p, width = 7, height = 6)
+}
+```
+
+
+
+## Putting it all together
+
+Here is the complete workflow in a compact script:
+
+```{r full-workflow, eval=FALSE}
+library(Seurat)
+library(scSpatial)
+
+# ---- Load data ----
+srt <- readRDS("path/to/seurat.rds")
+celltype.col <- "CellType"
+
+# ---- Step 1: Compute minimum distances ----
+dist.values <- calcMinDistance(
+  srt,
+  celltype.col  = celltype.col,
+  ref.celltypes = list(
+    KC_basal       = c("KC_basal"),
+    CD4_CD8        = c("CD4", "CD8"),
+    FB_proInf_sup  = c("FB_proInf_sup"),
+    FB_proInf_deep = c("FB_proInf_deep")
+  )
+)
+
+# Save results
+write.csv(dist.values, "min_distance_values.csv")
+
+# ---- Step 2: Add to metadata & subset ----
+for (col in colnames(dist.values)) {
+  srt@meta.data[[paste0("minDist_", col)]] <- dist.values[colnames(srt), col]
+}
+
+df.mc <- srt@meta.data[srt@meta.data[[celltype.col]] == "MC_CD14", ]
+
+# ---- Step 3: Single-structure plots ----
+ggplot(df.mc, aes(x = subCellType.pub1.1, y = minDist_KC_basal,
+                  fill = subCellType.pub1.1)) +
+  geom_violin() + geom_boxplot(width = 0.15) +
+  theme_bw() + theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+# ---- Step 4: Two-structure plots ----
+plotWithMargin(df.mc,
+               x.by = "minDist_KC_basal", y.by = "minDist_CD4_CD8",
+               color.by = "transition_rank")
+ggsave("minDist_KC_basal_vs_CD4CD8.pdf", width = 7, height = 6)
+
+plotWithMargin(df.mc,
+               x.by = "minDist_FB_proInf_sup", y.by = "minDist_FB_proInf_deep",
+               color.by = "transition_rank")
+ggsave("minDist_FB_proInf_sup_vs_deep.pdf", width = 7, height = 6)
+```
+
+
+## Session Info
+
+```{r session-info}
+sessionInfo()
+```

@@ -98,4 +98,142 @@ SankeyPlot <- function(object, groups, width.node = 20, size.text = 12, height =
 }
 
 
+#' @title Scatter plot with margin trend panels
+#'
+#' @description
+#' Create a scatter plot of two variables colored by a third, with loess
+#' trend panels on the left and bottom margins showing how the color variable
+#' changes along each axis. Useful for visualizing how cell states or
+#' transitions relate to spatial positions defined by distance metrics.
+#'
+#' @param df A data.frame containing the columns to plot.
+#' @param x.by Column name for the x-axis.
+#' @param y.by Column name for the y-axis.
+#' @param color.by Column name for coloring points. Must be numeric
+#'   (continuous).
+#' @param cols Color palette for the gradient. Defaults to
+#'   \code{c("#00E0FF", "yellow", "orange", "red")}.
+#' @param point.size Point size for the main scatter plot. Default 0.5.
+#' @param point.alpha Point transparency. Default 0.65.
+#'
+#' @return A \code{patchwork} object combining three panels.
+#'
+#' @examples
+#' \dontrun{
+#' plotWithMargin(df, x.by = "minDist_KC_basal",
+#'               y.by = "minDist_CD4",
+#'               color.by = "transition_rank")
+#' }
+#' @import ggplot2
+#' @importFrom scales squish
+#' @import patchwork
+#' @export
+plotWithMargin <- function(df, x.by, y.by, color.by,
+                           cols = c("#00E0FF", "yellow", "orange", "red"),
+                           point.size = 0.5, point.alpha = 0.65) {
+  if (!requireNamespace("patchwork", quietly = TRUE)) {
+    stop("Package 'patchwork' is required. Install with:\n",
+         "  install.packages('patchwork')")
+  }
 
+  global_min <- min(df[[color.by]], na.rm = TRUE)
+  global_max <- max(df[[color.by]], na.rm = TRUE)
+
+  x_range <- range(df[[x.by]], na.rm = TRUE)
+  x_range <- x_range + c(-0.02, 0.02) * diff(x_range)
+  x_breaks <- pretty(x_range, n = 5)
+  y_range <- range(df[[y.by]], na.rm = TRUE)
+  y_range <- y_range + c(-0.02, 0.02) * diff(y_range)
+  y_breaks <- pretty(y_range, n = 5)
+
+  my_color_scale <- scale_color_gradientn(
+    colours = cols,
+    limits  = c(global_min, global_max),
+    oob     = scales::squish,
+    name    = color.by
+  )
+
+  # Main scatter
+  p_main <- ggplot(df, aes(
+    x = .data[[x.by]],
+    y = .data[[y.by]],
+    color = .data[[color.by]]
+  )) +
+    geom_point(size = point.size, alpha = point.alpha, shape = 16) +
+    my_color_scale +
+    scale_x_continuous(limits = x_range, breaks = x_breaks, expand = c(0, 0)) +
+    scale_y_continuous(limits = y_range, breaks = y_breaks, expand = c(0, 0)) +
+    theme_bw() +
+    theme(
+      plot.margin  = margin(0, 0, 0, 0),
+      axis.title.x = element_blank(),
+      axis.title.y = element_blank(),
+      legend.position = "right"
+    ) +
+    labs(color = color.by)
+
+  # Bottom margin: loess of color.by ~ x.by
+  p_bot <- ggplot(df, aes(x = .data[[x.by]], y = .data[[color.by]])) +
+    geom_smooth(
+      aes(color = after_stat(y)),
+      method  = "loess",
+      formula = y ~ x,
+      se      = FALSE,
+      linewidth = 0.8
+    ) +
+    scale_x_continuous(limits = x_range, breaks = x_breaks, expand = c(0, 0)) +
+    my_color_scale +
+    theme_bw() +
+    theme(
+      plot.margin      = margin(0, 0, 0, 0),
+      axis.title.y     = element_blank(),
+      axis.text.x      = element_blank(),
+      axis.ticks.x     = element_blank(),
+      legend.position  = "none"
+    ) +
+    xlab(x.by) +
+    scale_y_reverse()
+
+  # Left margin: loess of color.by ~ y.by (flipped)
+  p_left <- ggplot(df, aes(x = .data[[y.by]], y = .data[[color.by]])) +
+    geom_smooth(
+      aes(color = after_stat(y)),
+      method  = "loess",
+      formula = y ~ x,
+      se      = FALSE,
+      linewidth = 0.8
+    ) +
+    scale_x_continuous(limits = y_range, breaks = y_breaks, expand = c(0, 0)) +
+    coord_flip() +
+    my_color_scale +
+    theme_bw() +
+    theme(
+      plot.margin      = margin(0, 0, 0, 0),
+      axis.text.y      = element_blank(),
+      axis.text.x      = element_text(angle = 90, hjust = 0.5, vjust = 0.5),
+      axis.ticks.y     = element_blank(),
+      axis.title.x     = element_blank(),
+      legend.position  = "none"
+    ) +
+    xlab(y.by) +
+    scale_y_reverse()
+
+  # Assemble with patchwork
+  layout_design <- "
+AB
+.C
+"
+  final <- patchwork::wrap_plots(
+    A = p_left,
+    B = p_main,
+    C = p_bot,
+    design = layout_design
+  ) +
+    patchwork::plot_layout(
+      widths  = c(1, 4),
+      heights = c(4, 1),
+      guides  = "collect"
+    )
+
+  return(final)
+}
